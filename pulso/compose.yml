@@ -1,0 +1,45 @@
+# The server's history: CPU, memory, disk, network, each container, each service (Uptime Kuma),
+# the internet connection and the power, minute by minute, plus every alert. Built here, not pulled.
+# Tailnet only, through tailscale serve: https://mac-server.tailnet-ejemplo.ts.net:3015
+# No Caddy name on purpose, like Finanzas: its alert log holds the weekly money summary.
+services:
+  pulso:
+    build: .
+    image: pulso:local
+    container_name: pulso
+    ports:
+      - "127.0.0.1:3015:8000"  # this Mac only: others reach it through tailscale serve
+    environment:
+      TZ: America/Argentina/Cordoba
+      # Who may open it (Tailscale login, as in the admin console). Others get a 403.
+      PULSO_ALLOWED_LOGINS: NahuelBurdisso@github
+      # What it reads (all read-only): Glances on the Mac, Docker through socket-proxy,
+      # Uptime Kuma's /metrics, and the server alerts topic on ntfy.
+      GLANCES_URL: http://host.docker.internal:61208/api/4
+      DOCKER_URL: http://socket-proxy:2375
+      KUMA_URL: http://host.docker.internal:3011
+      NTFY_URL: http://host.docker.internal:8091
+      PULSO_ROUTER: 192.168.1.1  # the Nokia router, to tell a Wi-Fi problem from a provider one
+      PULSO_LAN_PREFIX: 192.168.1.  # the home Wi-Fi, to count the devices that use AdGuard
+      PULSO_MAC_IP: 192.168.1.200   # setup/server.env
+      PULSO_LAT: "-31.42"           # Córdoba: the weather outside, next to the outages
+      PULSO_LON: "-64.18"
+      PULSO_RED_AWAY_MIN: "15"      # Red: minutes without a person's devices before they "left"
+      # Guardia's weekly report: the rules find, the local model (Ollama on the Mac) words it.
+      OLLAMA_URL: http://host.docker.internal:11434
+      OLLAMA_MODEL: qwen3:8b
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ./data:/data
+      - ../secrets/ntfy-topic:/run/secrets/ntfy-topic:ro
+    labels:
+      diun.enable: "false"  # local image, nothing to watch
+    networks:
+      - default
+      - dockerapi  # socket-proxy (read-only Docker API)
+    restart: unless-stopped
+
+networks:
+  dockerapi:
+    external: true  # created by socket-proxy/compose.yml

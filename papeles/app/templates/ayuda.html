@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>En el iPhone</h1>
+<section class="card">
+  <h2>1 · Como app</h2>
+  <p>En Safari, esta página → <strong>Compartir</strong> → <strong>Agregar a pantalla de inicio</strong>.</p>
+</section>
+<section class="card">
+  <h2>2 · “Guardar en Papeles” desde Compartir</h2>
+  <p>App <strong>Atajos</strong> → <strong>+</strong> → nombre <em>Guardar en Papeles</em>:</p>
+  <ol class="steps">
+    <li>En los detalles del atajo, activá <strong>Mostrar en la hoja para compartir</strong>, que reciba
+      <strong>Imágenes</strong> y <strong>PDF</strong>.</li>
+    <li><strong>Obtener contenido de URL</strong>: <code>{{ PUBLIC_URL }}/api/subir</code>, método <strong>POST</strong>,
+      cuerpo <strong>Formulario</strong>, un campo <em>files</em> de tipo <strong>Archivo</strong> = la entrada del atajo.</li>
+    <li><strong>Mostrar notificación</strong> con el contenido de la URL.</li>
+  </ol>
+  <p class="note">Después: en Fotos, Archivos, Mail o WhatsApp → Compartir → <em>Guardar en Papeles</em>. Te dice qué guardó
+    y si encontró un vencimiento. Con Tailscale prendido.</p>
+</section>
+<section class="card">
+  <h2>3 · Con el Asistente</h2>
+  <p>En Open WebUI: “¿dónde está la garantía de la heladera?”, “¿qué papeles vencen este mes?”.</p>
+</section>
+{% endblock %}

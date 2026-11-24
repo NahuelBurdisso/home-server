@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0f766e">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Finanzas">
+  <title>Finanzas</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <link rel="apple-touch-icon" href="/static/icon.png">
+</head>
+<body>
+  <main>{% block content %}{% endblock %}</main>
+  <nav class="tabs">
+    <a href="/mes" class="{{ 'on' if page in ('mes', 'pagos', 'pago') }}"><span>●</span>Mes</a>
+    <a href="/gastos" class="{{ 'on' if page in ('gastos', 'revisar') }}"><span>◔</span>Gastos</a>
+    <a href="/evolucion" class="{{ 'on' if page == 'evolucion' }}"><span>▮</span>Evolución</a>
+    <a href="/movimientos" class="{{ 'on' if page == 'movimientos' }}"><span>≡</span>Movimientos</a>
+    <a href="/cargar" class="{{ 'on' if page == 'cargar' }}"><span>＋</span>Cargar</a>
+  </nav>
+</body>
+</html>

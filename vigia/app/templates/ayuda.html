@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Cómo se usa</h1>
+<section class="card">
+  <h2>Por Telegram, al bot de casa</h2>
+  <ul class="phrases">
+    <li>«seguí el precio de https://…» · «… y avisame si baja de 150000»</li>
+    <li>«avisame si cambia https://…»</li>
+    <li>«avisame cuando aparezca "turnos" en https://…»</li>
+    <li>«avisame cuando desaparezca "No hay turnos disponibles" en https://…»</li>
+    <li>«… cada 30 minutos» (15 como mínimo; si no decís nada, cada hora)</li>
+    <li>«¿qué estoy vigilando?» o /vigia</li>
+    <li>Un link solo, o «guardá https://…» / «resumime https://…»: lo guardo y te mando el resumen.</li>
+    <li>Un audio largo (más de 5 minutos, hasta 45): lo transcribo, lo guardo y te mando el resumen.</li>
+    <li>Si algo quedó mal, «borrar» lo deshace.</li>
+  </ul>
+</section>
+<section class="card">
+  <h2>Qué avisa</h2>
+  <p><strong>Si cambia</strong>: qué se agregó y qué se sacó de la página (o de la parte que elijas con un selector CSS).</p>
+  <p><strong>Precio</strong>: cuando baja 1% o más (o lo que elijas), cuando es el más bajo que vi, o cuando baja de tu objetivo. Las subas las anoto pero no aviso.</p>
+  <p><strong>Texto</strong>: cuando aparece o cuando desaparece una frase (sin importar mayúsculas ni acentos).</p>
+  <p class="note">La primera lectura es la base: no avisa nada. Si una página falla 3 veces seguidas te aviso una vez, y no insisto hasta que vuelva a andar.</p>
+</section>
+<section class="card">
+  <h2>Qué no puede</h2>
+  <p>Páginas que piden login o que se arman con JavaScript (las lee vacías: te lo digo al agregarlas), capturas de pantalla, videos sin subtítulos. No abre direcciones de la red de casa ni del tailnet.</p>
+</section>
+<section class="card">
+  <h2>Para Siri y el Asistente</h2>
+  <p><strong>Obtener contenido de URL</strong> <code>{{ PUBLIC_URL }}/api/vigilancias</code> → <strong>Leer texto</strong>: lo que estoy vigilando.</p>
+  <p>Compartir un link: <code>{{ PUBLIC_URL }}/api/guardar</code>, método <strong>POST</strong>, cuerpo = el link.</p>
+  <p class="note">En Open WebUI, el <em>Asistente del server</em> ve las vigilancias y busca en lo guardado.</p>
+</section>
+{% endblock %}

@@ -1,0 +1,188 @@
+# siteMonitor: the status dot and latency, checked from inside the container.
+# container: its Docker state (docker.yaml); click the status to see its CPU and RAM.
+- Home:
+    - Hoy:
+        href: https://mac-server.tailnet-ejemplo.ts.net:3018
+        description: La mañana en una pantalla
+        icon: mdi-weather-sunset-up
+        siteMonitor: http://host.docker.internal:3018/health
+        server: mac
+        container: hoy
+    - Immich:
+        href: http://fotos.lan
+        description: Photo backup
+        icon: immich.png
+        siteMonitor: http://host.docker.internal:2283
+        server: mac
+        container: immich_server
+    - Jellyfin:
+        href: http://pelis.lan
+        description: Movies and shows
+        icon: jellyfin.png
+        siteMonitor: http://host.docker.internal:8096
+    - Open WebUI:
+        href: https://mac-server.tailnet-ejemplo.ts.net:3012
+        description: Local AI chat (Ollama), signs you in from Tailscale
+        icon: open-webui.png
+        siteMonitor: http://host.docker.internal:3012
+        server: mac
+        container: open-webui
+    - Finanzas:
+        href: https://mac-server.tailnet-ejemplo.ts.net:3013
+        description: Lo que te quedó cada mes
+        icon: mdi-cash-multiple
+        siteMonitor: http://host.docker.internal:3013
+        server: mac
+        container: finanzas
+    - Recordatorios:
+        href: https://mac-server.tailnet-ejemplo.ts.net:3014
+        description: Eventos y fechas, avisos al iPhone
+        icon: mdi-bell-ring
+        siteMonitor: http://host.docker.internal:3014
+        server: mac
+        container: recordatorios
+    - Lista:
+        href: https://mac-server.tailnet-ejemplo.ts.net:3016
+        description: Lista de compras, con Siri
+        icon: mdi-cart-outline
+        siteMonitor: http://host.docker.internal:3016/health
+        server: mac
+        container: lista
+    - Pedidos:
+        href: https://mac-server.tailnet-ejemplo.ts.net:3022
+        description: Los pedidos a domicilio de la casa
+        icon: mdi-moped-outline
+        siteMonitor: http://host.docker.internal:3022/health
+        server: mac
+        container: pedidos
+    - Papeles:
+        href: https://mac-server.tailnet-ejemplo.ts.net:3017
+        description: Documentos de la casa, buscables
+        icon: mdi-file-document-multiple-outline
+        siteMonitor: http://host.docker.internal:3017/health
+        server: mac
+        container: papeles
+    - Vigía:
+        href: https://mac-server.tailnet-ejemplo.ts.net:3021
+        description: Vigila precios y páginas, guarda links
+        icon: mdi-eye-outline
+        siteMonitor: http://host.docker.internal:3021/health
+        server: mac
+        container: vigia
+    - Mensajes:
+        href: https://mac-server.tailnet-ejemplo.ts.net:3019
+        description: El bot de Telegram de la casa
+        icon: mdi-send
+        siteMonitor: http://host.docker.internal:3019/health
+        server: mac
+        container: mensajes
+    - Soundbox:
+        href: https://mac-server.tailnet-ejemplo.ts.net:3023
+        description: Audio con IA local (efectos, música, voces)
+        icon: mdi-waveform
+        siteMonitor: http://host.docker.internal:3023/api/health
+    - n8n:
+        href: https://mac-server.tailnet-ejemplo.ts.net:5678
+        description: Automations (HTTPS for webhooks)
+        icon: n8n.png
+        siteMonitor: http://host.docker.internal:5678
+        server: mac
+        container: n8n
+- Server:
+    - Pulso:
+        href: https://mac-server.tailnet-ejemplo.ts.net:3015
+        description: Historia del server, internet y cortes
+        icon: mdi-heart-pulse
+        siteMonitor: http://host.docker.internal:3015/health
+        server: mac
+        container: pulso
+        # Only the light and counts (api/resumen): nothing private, since Homepage answers the LAN.
+        widget:
+          type: customapi
+          url: http://host.docker.internal:3015/api/resumen
+          refreshInterval: 60000
+          mappings:
+            - field: luz
+              label: Estado
+              remap:
+                - value: verde
+                  to: ✓ ok
+                - value: amarillo
+                  to: "! mirar"
+                - value: rojo
+                  to: ✗ mal
+            - field: internet_24h
+              label: Internet 24 h
+              format: percent
+            - field: internet_cortes_7d
+              label: Cortes 7 d
+            - field: alertas_24h
+              label: Alertas 24 h
+    - Mesa:
+        href: https://mac-server.tailnet-ejemplo.ts.net:3020
+        description: Claude invierte en papel, contra el S&P
+        icon: mdi-chart-line
+        siteMonitor: http://host.docker.internal:3020/health
+        server: mac
+        container: mesa
+    - AdGuard Home:
+        href: https://mac-server.tailnet-ejemplo.ts.net:3000
+        description: Ad-blocking DNS
+        icon: adguard-home.png
+        siteMonitor: http://host.docker.internal:3000
+        # No login (Tailscale is the login), so the widget needs no password.
+        widget:
+          type: adguard
+          url: http://host.docker.internal:3000
+    - Uptime Kuma:
+        href: https://mac-server.tailnet-ejemplo.ts.net:3011
+        description: Service checks and alerts
+        icon: uptime-kuma.png
+        siteMonitor: http://host.docker.internal:3011
+        server: mac
+        container: uptime-kuma
+    - Dozzle:
+        href: https://mac-server.tailnet-ejemplo.ts.net:8080
+        description: Live container logs (read-only)
+        icon: dozzle.png
+        siteMonitor: http://host.docker.internal:8080/healthcheck
+        server: mac
+        container: dozzle
+    - Glances:
+        href: https://mac-server.tailnet-ejemplo.ts.net:61208
+        description: CPU, RAM and disk graphs
+        icon: glances.png
+        siteMonitor: http://host.docker.internal:61208
+    - ntfy:
+        href: http://alertas.lan
+        description: Phone alerts (self-hosted)
+        icon: ntfy.png
+        siteMonitor: http://host.docker.internal:8091
+        server: mac
+        container: ntfy
+# Live graphs from Glances (the Mac itself, not a container).
+- Mac:
+    - CPU:
+        widget:
+          type: glances
+          url: http://host.docker.internal:61208
+          version: 4
+          metric: cpu
+    - Memoria:
+        widget:
+          type: glances
+          url: http://host.docker.internal:61208
+          version: 4
+          metric: memory
+    - Red (en0):
+        widget:
+          type: glances
+          url: http://host.docker.internal:61208
+          version: 4
+          metric: network:en0
+    - Disco (I/O):
+        widget:
+          type: glances
+          url: http://host.docker.internal:61208
+          version: 4
+          metric: disk:disk0

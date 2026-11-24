@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block content %}
+<header class="month-nav"><a href="/pagos" aria-label="Volver">‹</a><h1>{{ b.emoji ~ ' ' ~ b.name if b else 'Nuevo pago' }}</h1><span></span></header>
+{% if error %}<p class="warn">{{ error }}</p>{% endif %}
+
+{% if b %}
+<section class="card">
+  {% if details %}
+  <h2>Lo que te pide para pagar</h2>
+  {% for line in details %}<code class="copy">{{ line }}</code>{% endfor %}
+  {% endif %}
+  {% if b.url %}<a class="button wide" href="{{ b.url }}" target="_blank" rel="noopener">Pagar</a>{% endif %}
+  {% if b.notes %}<p class="note">{{ b.notes }}</p>{% endif %}
+  <p class="note">Todos los meses el {{ b.day }}{{ ' · ' ~ usd(b.amount_usd / 100) if b.amount_usd is not none }}{{ ' · pausado' if not b.active }}</p>
+  {% if progress %}
+  <div class="bar"><i class="pos" style="width: {{ progress.pct }}%"></i></div>
+  <p class="note">{{ progress.text }}</p>
+  {% endif %}
+</section>
+
+{% if history %}
+<section class="card">
+  <h2>Últimos meses</h2>
+  <ul class="list">
+    {% for p in history %}
+    <li><span>{{ month_name(p.month) | capitalize }}
+      <small>{% if p.paid %}Pagado el {{ p.paid_on.day }}/{{ p.paid_on.month }} ·
+        {{ {'movimiento': 'con un movimiento', 'manual': 'marcado a mano', 'recordatorio': 'con el recordatorio'}.get(p.via, p.via) }}
+        {%- if p.tx_id %} · <a href="/movimientos/{{ p.tx_id }}?back=/pagos/{{ b.id }}">ver</a>{% endif %}
+        {%- if p.manual %}
+        <form method="post" action="/pagos/{{ b.id }}/pendiente" class="inline"><input type="hidden" name="m" value="{{ p.month }}">
+          <input type="hidden" name="back" value="/pagos/{{ b.id }}"><button class="link">Desmarcar</button></form>{% endif %}
+      {% elif p.late or p.due < today %}<span class="neg">Sin pagar</span>
+      {% else %}Vence el {{ p.due.day }}{% endif %}</small></span>
+      <strong>{{ money(b, p.amount) if p.amount is not none }}</strong>
+      {% if not p.paid %}
+      <form method="post" action="/pagos/{{ b.id }}/pagada"><input type="hidden" name="m" value="{{ p.month }}">
+        <input type="hidden" name="back" value="/pagos/{{ b.id }}"><button class="chip">Ya lo pagué</button></form>
+      {% endif %}
+    </li>
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}
+{% endif %}
+
+<section class="card">
+  <h2>{{ 'Cambiar' if b else 'Lo que pagás todos los meses' }}</h2>
+  <form method="post" action="{{ '/pagos/%d' % b.id if b else '/pagos' }}" class="form">
+    <label>Nombre <input name="nombre" value="{{ f.nombre or '' }}" placeholder="Luz (EPEC)" required></label>
+    <label>Emoji <input name="emoji" value="{{ f.emoji or '' }}" placeholder="🧾"></label>
+    <label>Día del mes que vence (1 a 28) <input name="dia" type="number" min="1" max="28" value="{{ f.dia or '' }}" required></label>
+    <label>Lo que te pide para pagar, uno por renglón <textarea name="datos" rows="3" placeholder="Cliente: 123456">{{ f.datos or '' }}</textarea></label>
+    <label>Dónde se paga (link) <input name="url" type="url" inputmode="url" value="{{ f.url or '' }}" placeholder="https://…"></label>
+    <label>Palabras para detectarlo en los gastos, separadas por coma
+      <input name="detectar" value="{{ f.detectar or '' }}" placeholder="epec, 123456"></label>
+    <label>Monto fijo en US$ (vacío: en pesos, lo que diga la factura) <input name="monto_usd" inputmode="decimal" value="{{ f.monto_usd or '' }}"></label>
+    <label>Si es algo que estás terminando de pagar: precio total en US$ <input name="total_usd" inputmode="decimal" value="{{ f.total_usd or '' }}"></label>
+    <label>…y lo que pagaste antes, por fuera de estas cuotas (US$) <input name="pagado_antes_usd" inputmode="decimal" value="{{ f.pagado_antes_usd or '' }}"></label>
+    <label>Desde <input type="month" name="desde" value="{{ f.desde or '' }}" required></label>
+    <label>Notas <textarea name="notas" rows="2">{{ f.notas or '' }}</textarea></label>
+    <label class="check"><input type="checkbox" name="activo" value="1" {{ 'checked' if f.activo }}><span>Activo (se paga todos los meses)</span></label>
+    <button class="button">{{ 'Guardar' if b else 'Agregar' }}</button>
+  </form>
+</section>
+
+{% if b %}
+<form method="post" action="/pagos/{{ b.id }}/borrar" class="danger"
+      onsubmit="return confirm('¿Borrar {{ b.name | replace("'", "") }} y lo marcado de todos los meses?')"><button>Borrar este pago</button></form>
+{% endif %}
+{% endblock %}

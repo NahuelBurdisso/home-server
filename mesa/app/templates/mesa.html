@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% from "_macros.html" import orden_linea %}
+{% block content %}
+{% set mc = e.claude %}{% set mv = e.vara %}
+<h1>Mesa {% if e.pausada %}<span class="chip pausa">en pausa</span>{% endif %}</h1>
+
+{% if not e.empezo %}
+<section class="card hero">
+  <p class="label">Claude contra la vara (SPY)</p>
+  <p class="big">Todavía no empezó</p>
+  <p class="note">Las dos carteras tienen {{ num(mc.capital, 0) }} USD en efectivo. El reloj arranca con la primera
+    ejecución: la primera decisión con órdenes compra también la vara (SPY) a la misma apertura.</p>
+  <p class="note">Próxima sesión de Claude: {{ dia(e.proxima_sesion) }}, 8:30 (Córdoba).</p>
+</section>
+{% else %}
+<section class="card hero">
+  <p class="label">Claude contra la vara, desde el {{ dia(e.desde) }}</p>
+  <p class="big {{ clase_signo(e.exceso) }}">{{ pts(e.exceso) }}</p>
+  <div class="sub">
+    <span><b class="{{ clase_signo(mc.retorno) }}">{{ pct(mc.retorno) }}</b><i>Claude · {{ num(mc.valor) }} USD</i></span>
+    <span><b class="{{ clase_signo(mv.retorno) }}">{{ pct(mv.retorno) }}</b><i>la vara · {{ num(mv.valor) }} USD</i></span>
+  </div>
+</section>
+
+<section class="card">
+  <h2>Las dos curvas <span class="right">base 100</span></h2>
+  {{ dos_curvas(e.curva_claude, e.curva_vara) }}
+  <dl class="kv">
+    <dt>Peor caída</dt><dd>Claude {{ pct(-(mc.max_drawdown or 0)) }} · vara {{ pct(-(mv.max_drawdown or 0)) }}</dd>
+    <dt>Costos pagados</dt><dd>Claude {{ num(mc.costos) }} · vara {{ num(mv.costos) }} USD</dd>
+    <dt>Dividendos netos</dt><dd>Claude {{ num(mc.dividendos_netos) }} · vara {{ num(mv.dividendos_netos) }} USD</dd>
+  </dl>
+</section>
+{% endif %}
+
+{% set v = e.veredicto %}
+{% if e.veredicto_fijo %}
+<section class="card status {{ '' if e.veredicto_fijo.pasa else 'bad' }}">
+  <p class="label"><span class="dot"></span>Veredicto ({{ dia(e.veredicto_fijo.fecha) }}): {{ 'pasa' if e.veredicto_fijo.pasa else 'no pasa' }}</p>
+  <p class="note">Claude {{ pct(e.veredicto_fijo.retorno_claude) }}, la vara {{ pct(e.veredicto_fijo.retorno_vara) }}; peor caída
+    {{ pct(-(e.veredicto_fijo.caida_claude or 0)) }} contra {{ pct(-(e.veredicto_fijo.caida_vara or 0)) }}.</p>
+</section>
+{% elif v.empezo %}
+<section class="card">
+  <h2>El veredicto <span class="right">{{ dia(v.fecha) }}</span></h2>
+  <p class="note">Faltan <b>{{ v.dias }} días</b>. Se lee una sola vez: pasa si Claude rinde igual o más que la vara y su
+    peor caída no la supera en más de 5 puntos. {% if v.pasaria_hoy is not none %}Si fuera hoy, {{ 'pasaría' if v.pasaria_hoy else 'no pasaría' }} (informativo).{% endif %}</p>
+</section>
+{% endif %}
+
+<section class="card">
+  <h2>Posiciones de Claude <span class="right">efectivo {{ num(mc.efectivo) }} USD{% if mc.valor %} · {{ pct(mc.efectivo / mc.valor, false) }}{% endif %}</span></h2>
+  {% if e.posiciones %}
+  <ul class="list">
+    {% for p in e.posiciones %}
+    <li><a href="/posiciones/{{ p.ticker }}" style="color:inherit;text-decoration:none">
+      <div class="row"><span><b>{{ p.ticker }}</b> <span class="sub">{{ pct(p.peso, false) }}</span></span>
+        <span class="{{ clase_signo(p.pnl) }}">{{ signo(p.pnl) }} USD · {{ pct(p.pnl_pct) }}</span></div>
+      {% if p.tesis %}<p class="sub" style="margin:2px 0 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ p.tesis.texto }}</p>{% endif %}
+    </a></li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="note">Nada todavía: todo en efectivo.</p>
+  {% endif %}
+</section>
+
+{% if e.pendientes %}
+<section class="card">
+  <h2>Órdenes pendientes</h2>
+  <ul class="list">{% for o in e.pendientes %}{{ orden_linea(o) }}{% endfor %}</ul>
+</section>
+{% endif %}
+
+<section class="card">
+  <h2>Última decisión {% if e.ultima_decision %}<span class="right">{{ hora(e.ultima_decision.ts) }}</span>{% endif %}</h2>
+  {% if e.ultima_decision %}
+  <p class="note" style="color:var(--ink)">{{ e.ultima_decision.resumen }}</p>
+  <p class="note"><a href="/decisiones/{{ e.ultima_decision.id }}">Ver la decisión</a> · próxima sesión {{ dia(e.proxima_sesion) }}, 8:30</p>
+  {% else %}
+  <p class="note">Claude todavía no vino. Próxima sesión: {{ dia(e.proxima_sesion) }}, 8:30 (Córdoba).</p>
+  {% endif %}
+</section>
+
+<p class="footnote">{{ e.frase }}</p>
+{% endblock %}

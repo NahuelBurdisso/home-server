@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Subir</h1>
+<form class="card form" method="post" action="/subir" enctype="multipart/form-data">
+  <label class="drop">PDF o fotos (también varias a la vez)
+    <input type="file" name="files" multiple accept="application/pdf,image/*" required>
+  </label>
+  <button class="button">Guardar</button>
+  <p class="note">Las fotos y los PDF escaneados se leen con OCR acá mismo, en el Mac: puede tardar unos segundos.</p>
+</form>
+{% if results %}
+<section class="card">
+  <ul class="docs">
+  {% for r in results %}
+    {% if r.error %}<li><a><span class="ico">⚠️</span><span class="t">{{ r.name }}<small>{{ r.error }}</small></span></a></li>
+    {% else %}{% set d = r.doc %}{% include "_doc.html" %}{% endif %}
+  {% endfor %}
+  </ul>
+</section>
+{% endif %}
+{% endblock %}

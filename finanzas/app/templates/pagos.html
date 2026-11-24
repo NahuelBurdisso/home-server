@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block content %}
+<header class="month-nav">
+  {% if has_prev %}<a href="/pagos?m={{ prev }}" aria-label="Mes anterior">‹</a>{% else %}<a href="/mes" aria-label="Volver">‹</a>{% endif %}
+  <h1>Pagos de {{ month_name(month, year=False) }}{{ ' ' ~ month[:4] if month[:4] != this_month[:4] }}</h1>
+  {% if has_next %}<a href="/pagos?m={{ next }}" aria-label="Mes siguiente">›</a>{% else %}<span></span>{% endif %}
+</header>
+
+{% if items %}
+<section class="card">
+  <h2>{{ paid }} de {{ items | length }} pagados</h2>
+  <ul class="list bills">
+    {% for p in items %}{% set b = p.bill %}
+    <li>
+      <span class="emoji" aria-hidden="true">{{ b.emoji }}</span>
+      <span><a class="name" href="/pagos/{{ b.id }}">{{ b.name }}</a>
+        <small>
+        {%- if p.paid -%}
+          {% set said = 'Pagado el ' ~ p.paid_on.day ~ '/' ~ p.paid_on.month ~ (' · ' ~ money(b, p.amount) if p.amount is not none else '') %}
+          {%- if p.tx_id %}<a href="/movimientos/{{ p.tx_id }}?back=/pagos%3Fm%3D{{ month }}">{{ said }}</a>{% else %}{{ said }}{% endif %}
+          {{- ' · con el recordatorio' if p.via == 'recordatorio' }}
+        {%- elif p.late or p.due < today -%}
+          <span class="neg">Venció el {{ p.due.day }}</span>
+        {%- else -%}
+          Vence el {{ p.due.day }}
+        {%- endif -%}
+        {%- if not p.paid and p.last and b.amount_usd is none %} · último: {{ money(b, p.last.amount) }} ({{ month_name(p.last.month, year=False) }}){% endif -%}
+        {%- if b.amount_usd is not none and not p.paid %} · {{ usd(b.amount_usd / 100) }}{% endif -%}
+        </small>
+        {% if p.progress %}<small>{{ p.progress.text }}</small>{% endif %}
+        {% if not p.paid or p.manual %}
+        <span class="bill-actions">
+          {% if not p.paid %}
+          {% if b.url %}<a class="chip" href="{{ b.url }}" target="_blank" rel="noopener">Pagar</a>{% endif %}
+          <form method="post" action="/pagos/{{ b.id }}/pagada"><input type="hidden" name="m" value="{{ month }}">
+            <button class="chip on">Ya lo pagué</button></form>
+          {% elif p.manual %}
+          <form method="post" action="/pagos/{{ b.id }}/pendiente"><input type="hidden" name="m" value="{{ month }}">
+            <button class="chip">Desmarcar</button></form>
+          {% endif %}
+        </span>
+        {% endif %}
+      </span>
+      <strong class="{{ 'pos' if p.paid else ('neg' if p.late) }}">{{ '✓' if p.paid else '·' }}</strong>
+    </li>
+    {% endfor %}
+  </ul>
+</section>
+{% else %}
+<section class="card empty">
+  <h2>No hay pagos para este mes</h2>
+  <p>Cargá lo que pagás todos los meses (luz, gas, agua, impuestos…) y acá vas a ver qué falta pagar.</p>
+</section>
+{% endif %}
+
+{% if others %}
+<section class="card">
+  <h2>No van este mes</h2>
+  <ul class="list">
+    {% for b in others %}
+    <li><a class="row" href="/pagos/{{ b.id }}"><span>{{ b.emoji }} {{ b.name }}
+      <small>{{ 'Pausado' if not b.active else 'Desde ' ~ month_name(b.start_month) }}</small></span><strong>›</strong></a></li>
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}
+
+<a class="button wide" href="/pagos/nuevo">Agregar un pago</a>
+<p class="footnote">Un pago queda hecho solo cuando entra un gasto de ese mes con alguna de sus palabras para
+  detectarlo (BBVA, Mercado Pago, efectivo); si no, tocá «Ya lo pagué». Marcarlo no anota ningún gasto.
+  También con Siri o Telegram: «¿qué me falta pagar?», «pagué la luz» (<a href="/atajo#pagos">cómo</a>).</p>
+{% endblock %}

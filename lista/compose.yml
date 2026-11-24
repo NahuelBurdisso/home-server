@@ -1,0 +1,20 @@
+# The house's shopping list: by section of the store, Siri and the local AI add to it and read it.
+# Built here, not pulled. Tailnet only, through tailscale serve: https://mac-server.tailnet-ejemplo.ts.net:3016
+# No Caddy name on purpose, like Finanzas and Recordatorios: Caddy answers the whole LAN.
+services:
+  lista:
+    build: .
+    image: lista:local
+    container_name: lista
+    ports:
+      - "127.0.0.1:3016:8000"  # this Mac only: others reach it through tailscale serve
+    environment:
+      TZ: America/Argentina/Cordoba
+      # Who may open it (Tailscale login, as in the admin console). Others get a 403.
+      LISTA_ALLOWED_LOGINS: NahuelBurdisso@github
+      LISTA_URL: https://mac-server.tailnet-ejemplo.ts.net:3016
+    volumes:
+      - ./data:/data
+    labels:
+      diun.enable: "false"  # local image, nothing to watch
+    restart: unless-stopped

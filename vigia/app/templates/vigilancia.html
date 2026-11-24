@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>{{ w.name }}</h1>
+{% if ok %}<p class="ok-box">{{ ok }}</p>{% endif %}
+{% if w.fails %}<p class="warn">No la pude leer {{ w.fails }} vez{{ 'es' if w.fails > 1 }} seguida{{ 's' if w.fails > 1 }}: {{ w.last_error }}</p>{% endif %}
+
+<section class="card">
+  <div class="meta">
+    <span class="pill {{ 'off' if not w.active else 'bad' if w.fails else '' }}">{{ state(w) }}</span>
+    <span>leída {{ ago(w.last_ok) }}</span><span>{{ every_text(w.every_min) }}</span>
+    {% if w.selector %}<span>solo «{{ w.selector }}»</span>{% endif %}
+  </div>
+  {% if stats %}
+  <p class="read big">{{ money(stats.now) }}</p>
+  <p class="verdict">{{ stats.verdict }}</p>
+  <div class="stats">
+    <div><small>Más bajo</small><strong>{{ money(stats.low) }}</strong></div>
+    <div><small>Más alto</small><strong>{{ money(stats.high) }}</strong></div>
+    <div><small>Habitual (30 días)</small><strong>{{ money(stats.usual) }}</strong></div>
+    <div><small>Aviso</small><strong>−{{ '%g' % w.umbral }}%{% if w.objetivo %} o &lt; {{ money(w.objetivo) }}{% endif %}</strong></div>
+  </div>
+  {{ line }}
+  {% elif w.kind == 'texto' %}
+  <p class="read big">{{ 'Dice' if w.value_num else 'No dice' }} «{{ w.needle }}»</p>
+  {% if w.value_text %}<p class="muted">{{ w.value_text }}</p>{% endif %}
+  <p class="note">Te aviso cuando {{ 'aparezca' if w.cuando == 'aparece' else 'desaparezca' }}.</p>
+  {% else %}
+  <p class="muted">Lo que dice ahora:</p>
+  <pre class="diff">{{ (w.value_text or '')[:1500] }}{{ '…' if (w.value_text or '')|length > 1500 }}</pre>
+  {% endif %}
+  <p class="note"><a href="{{ w.url }}" rel="noreferrer noopener" target="_blank">{{ w.url }}</a></p>
+  <div class="actions">
+    <form method="post" action="/v/{{ w.id }}/probar"><button class="button">Probar ahora</button></form>
+    <form method="post" action="/v/{{ w.id }}/pausar"><button class="button ghost">{{ 'Reanudar' if not w.active else 'Pausar' }}</button></form>
+    <form method="post" action="/v/{{ w.id }}/borrar" onsubmit="return confirm('¿Dejar de vigilarla?')"><button class="button danger-b">Borrar</button></form>
+  </div>
+</section>
+
+<section class="card">
+  <h2>Historia</h2>
+  <ul class="history">
+    {% for c in checks %}
+    <li>
+      <time>{{ c.ts[:16] }}{{ ' · cambió' if c.changed }}</time>
+      {% if w.kind == 'precio' and c.value_num is not none %}<strong>{{ money(c.value_num) }}</strong>{% endif %}
+      {% if c.note %}<pre class="diff">{{ c.note }}</pre>{% elif w.kind != 'precio' %}<span class="muted">sin cambios</span>{% endif %}
+    </li>
+    {% endfor %}
+  </ul>
+</section>
+<p class="footnote">Agregada {{ w.created_at[:16] }}{{ ' por ' ~ w.added_by if w.added_by }}{{ ' desde Telegram' if w.chat }}.</p>
+{% endblock %}

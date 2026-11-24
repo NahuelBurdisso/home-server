@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+{% macro url(m=v.month, g=v.g, c=v.c, r=v.span, w=v.who) -%}
+/gastos?m={{ m }}&r={{ r }}{{ '&g=' ~ g if g and not c }}{{ '&c=' ~ c if c }}{{ '&quien=' ~ w if w }}
+{%- endmacro %}
+{% block content %}
+<header class="month-nav">
+  {% if has_prev %}<a href="{{ url(m=prev) }}" aria-label="Mes anterior">‹</a>{% else %}<span></span>{% endif %}
+  <h1>{{ month_name(v.month) | capitalize }}</h1>
+  {% if has_next %}<a href="{{ url(m=next) }}" aria-label="Mes siguiente">›</a>{% else %}<span></span>{% endif %}
+</header>
+
+<div class="toggle">
+  <a href="{{ url(r=1) }}" class="{{ 'on' if v.span == 1 }}">Este mes</a>
+  <a href="{{ url(r=3) }}" class="{{ 'on' if v.span == 3 }}">3 meses</a>
+  <a href="{{ url(r=6) }}" class="{{ 'on' if v.span == 6 }}">6 meses</a>
+</div>
+
+<div class="chips" aria-label="De quién">
+  <a href="{{ url(w=None) }}" class="{{ 'on' if not v.who }}">Todos</a>
+  {% for k, label in PEOPLE.items() %}<a href="{{ url(w=k) }}" class="{{ 'on' if v.who == k }}">{{ label }}</a>{% endfor %}
+</div>
+
+{% if v.g %}
+<nav class="crumbs" aria-label="Nivel de detalle">
+  <a href="{{ url(g=None, c=None) }}">Todo</a>
+  <span>›</span>
+  {% if v.c %}<a href="{{ url(g=v.g, c=None) }}">{{ group.emoji }} {{ group.label }}</a><span>›</span><strong>{{ sub_label }}</strong>
+  {% else %}<strong>{{ group.emoji }} {{ group.label }}</strong>{% endif %}
+</nav>
+{% endif %}
+
+{% if incomplete %}
+<a class="warn soft" href="/cargar">{% if v.span == 1 %}Faltan los gastos de alguna cuenta este mes{% else %}Faltan datos en
+  {{ incomplete | map('month_short') | join(', ') }}{% endif %}: el total y los porcentajes van a cambiar. <strong>Cargar</strong></a>
+{% endif %}
+{% if to_review and not v.g %}
+<a class="warn soft" href="/revisar?m={{ v.month }}">{{ to_review }} gasto{{ 's' if to_review > 1 }} sin categoría confirmada este mes. <strong>Revisar</strong></a>
+{% endif %}
+
+<section class="card total">
+  <p class="label">{{ 'Gastaste' if v.span == 1 else 'Gastás en promedio' }}{{ ' en ' ~ (sub_label or group.label) | lower if v.g }}{{ ' · ' ~ PEOPLE[v.who] if v.who }}</p>
+  <p class="big">{{ ars(main.total) }}</p>
+  <p class="sub muted">{{ 'por mes, ' ~ month_short(main.months[0]) ~ ' – ' ~ month_short(main.months[-1]) if v.span > 1 }}</p>
+</section>
+
+{% if not main['items'] %}
+<section class="card empty"><p>No hay gastos {{ 'en esta categoría ' if v.g }}en este período.</p></section>
+{% else %}
+<section class="card">
+  <h2>{% if v.c %}Dónde{% elif v.g %}En qué{% else %}En qué se fue{% endif %}</h2>
+  <ul class="ranks">
+    {% for it in main['items'] %}
+    {% if v.c %}{% set href = None %}
+    {% elif v.g %}{% set href = url(c=it.id) %}
+    {% else %}{% set href = url(g=it.id, c=None) %}{% endif %}
+    <li>
+      {% if href %}<a href="{{ href }}">{% else %}<div>{% endif %}
+        <span class="name">{% if it.emoji %}<span class="emoji" aria-hidden="true">{{ it.emoji }}</span>{% endif %}{{ it.label }}</span>
+        <span class="amount">{{ ars(it.value) }}</span>
+        {% set b = budgets.get(it.id) if not v.g else None %}
+        {% if b %}
+        <span class="meter budget {{ 'over' if b.pct >= 100 else 'near' if b.pct >= 80 }}" title="{{ b.pct }}% de {{ ars(b.limit) }}"><i style="width: {{ [b.pct, 100] | min }}%"></i></span>
+        {% else %}
+        <span class="meter" title="{{ it.label }}: {{ ars(it.value) }} ({{ it.share }}%)"><i style="width: {{ it.width }}%"></i></span>
+        {% endif %}
+        <span class="meta">{% if b %}<strong class="{{ 'neg' if b.pct >= 100 }}">{{ b.pct }}% de {{ ars(b.limit) }}</strong> · {% endif %}{{ it.share }}% del total{% if v.c %} · {{ it.count }} {{ 'pago' if it.count == 1 else 'pagos' }}{% endif %}
+          {% if it.delta is not none and (it.delta | abs) >= 10 %}
+          · <span class="delta {{ 'up' if it.delta > 0 else 'down' }}">{{ '▲' if it.delta > 0 else '▼' }} {{ it.delta | abs }}%</span> vs. tu promedio
+          {% endif %}</span>
+        {% if href %}<span class="chev" aria-hidden="true">›</span>{% endif %}
+      {% if href %}</a>{% else %}</div>{% endif %}
+    </li>
+    {% endfor %}
+  </ul>
+  {% if not v.g %}<p class="note">Tocá una categoría para ver el detalle.</p>{% endif %}
+</section>
+{% endif %}
+
+{% if v.g and not v.c and v.span == 1 %}
+<form class="card form budget-form" method="post" action="/presupuesto">
+  <input type="hidden" name="grupo" value="{{ v.g }}"><input type="hidden" name="m" value="{{ v.month }}">
+  <label>Presupuesto por mes para {{ group.label | lower }}
+    <input name="monto" inputmode="decimal" placeholder="por ejemplo 200 mil" value="{{ (budget_limit / 100) | round | int if budget_limit }}">
+  </label>
+  <button class="button">Guardar</button>
+  <p class="note">En pesos de este mes: se ajusta solo con la inflación. Vacío o 0 lo saca. Si te pasás, te avisa.</p>
+</form>
+{% endif %}
+
+{% if merchants %}
+<section class="card">
+  <h2>Dónde, en toda la categoría</h2>
+  <ul class="list">
+    {% for it in merchants %}
+    <li><span>{{ it.label }}<small>{{ it.count }} {{ 'pago' if it.count == 1 else 'pagos' }}</small></span><strong>{{ ars(it.value) }}</strong></li>
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}
+
+{% if movs %}
+<section class="card">
+  <h2>Movimientos</h2>
+  <ul class="list">
+    {% for t in movs %}
+    <li><a class="row" href="/movimientos/{{ t.id }}?back={{ (url() | urlencode) }}">
+      <span>{{ t.description }}<small>{{ t.date[8:10] }}/{{ t.date[5:7] }} · {{ ACCOUNTS[t.account] }}{{ ' · ' ~ usd((t.amount_usd | abs) / 100) if t.amount_usd }}</small></span>
+      <strong>{{ ars(-t.amount) }}</strong></a></li>
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}
+{% endblock %}

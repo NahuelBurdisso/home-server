@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="bar"><h1>❯ red <span class="dim">· quién está en la Wi-Fi de casa</span></h1>
+  <span class="dim">{% if v.last_scan %}último escaneo {{ when(v.last_scan) }}{% else %}sin escaneos todavía{% endif %}</span></div>
+{% if v.stale_min %}
+<section class="light amarillo"><i></i><div><b>Sin datos desde hace {{ minutes(v.stale_min) }}</b>
+  <span>El Mac escanea cada 2 minutos (setup/red-scan.sh). Mientras no lleguen, nadie entra ni sale.</span></div></section>
+{% elif not v.last_scan %}
+<p class="foot">Todavía no llegó ningún escaneo del Mac (setup/red-scan.sh, cada 2 minutos). El primero se guarda como
+  la línea de base: todo lo que esté conectado en ese momento queda como conocido, sin avisos.</p>
+{% endif %}
+
+<section class="stats">
+  <div><b>{{ v.home | join(', ') if v.home else 'nadie' }}</b><small>en casa</small></div>
+  <div><b>{{ v.present | length }}</b><small>equipos conectados</small></div>
+  <div><b class="{{ 'red' if v.unknown }}">{{ v.unknown | length }}</b><small>desconocidos</small></div>
+  <div><b>{{ v.known | length }}</b><small>conocidos</small></div>
+</section>
+
+{% if v.unknown %}
+<h2>❯ desconocidos <span class="dim">· nombralos o olvidalos</span></h2>
+<section class="panel">
+  <table class="red-list">
+    {% for d in v.unknown %}
+    <tr>
+      <td><b class="red">{{ d.ip or '—' }}</b> <span class="dim">{{ d.mac }}</span>{% if d.private %} <span class="tag">dirección privada</span>{% endif %}
+        <small>apareció {{ when(d.first_seen, True) }} · {{ 'conectado ahora' if d.present else 'visto hace ' ~ minutes(d.ago_min) }}</small></td>
+      <td>
+        <form method="post" action="/red/dispositivo" class="inline">
+          <input type="hidden" name="mac" value="{{ d.mac }}">
+          <input name="name" placeholder="nombre: iPhone de Sofía" aria-label="Nombre" required>
+          <select name="kind" aria-label="Tipo"><option value="">tipo</option>{% for k, l in v.kinds.items() %}<option value="{{ k }}">{{ l }}</option>{% endfor %}</select>
+          <input name="person" placeholder="de quién (opcional)" aria-label="De quién">
+          <button>es de casa</button>
+        </form>
+        <form method="post" action="/red/olvidar" class="inline"><input type="hidden" name="mac" value="{{ d.mac }}"><button class="ghost">olvidar</button></form>
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+</section>
+{% endif %}
+
+<h2>❯ conectados ahora</h2>
+<section class="panel">
+  <table class="red-list">
+    <thead><tr><th>equipo</th><th>de</th><th>ip</th><th>mac</th><th class="num">visto</th></tr></thead>
+    {% for d in v.present %}
+    <tr><td>{{ d.label }}{% if d.kind_label %} <span class="dim">· {{ d.kind_label }}</span>{% endif %}{% if not d.known %} <span class="tag red">desconocido</span>{% endif %}</td>
+      <td>{{ d.person or '' }}</td><td>{{ d.ip }}</td>
+      <td class="dim">{{ d.mac }}{% if d.private %} <span class="tag">dirección privada</span>{% endif %}</td>
+      <td class="num dim">{{ 'ahora' if d.ago_min < 3 else 'hace ' ~ minutes(d.ago_min) }}</td></tr>
+    {% else %}
+    <tr><td class="dim">Nadie conectado según el último escaneo.</td></tr>
+    {% endfor %}
+  </table>
+</section>
+
+<h2>❯ conocidos <span class="dim">· cambiá el nombre o de quién es</span></h2>
+<section class="panel">
+  <table class="red-list">
+    {% for d in v.known %}
+    <tr class="{{ '' if d.present else 'off' }}">
+      <td><i class="dot {{ 'up' if d.present else 'unk' }}"></i>{{ d.ip }} <span class="dim">{{ d.mac }}</span>
+        <small>{{ 'conectado' if d.present else 'visto ' ~ when(d.last_seen, True) }}</small></td>
+      <td>
+        <form method="post" action="/red/dispositivo" class="inline">
+          <input type="hidden" name="mac" value="{{ d.mac }}">
+          <input name="name" value="{{ d.name }}" placeholder="nombre" aria-label="Nombre">
+          <select name="kind" aria-label="Tipo"><option value="">tipo</option>{% for k, l in v.kinds.items() %}<option value="{{ k }}" {{ 'selected' if d.kind == k }}>{{ l }}</option>{% endfor %}</select>
+          <input name="person" value="{{ d.person }}" placeholder="de quién" aria-label="De quién">
+          <button class="ghost">guardar</button>
+        </form>
+        <form method="post" action="/red/olvidar" class="inline"><input type="hidden" name="mac" value="{{ d.mac }}"><button class="ghost">olvidar</button></form>
+      </td>
+    </tr>
+    {% else %}
+    <tr><td class="dim">Ninguno todavía.</td></tr>
+    {% endfor %}
+  </table>
+</section>
+
+<h2>❯ entradas y salidas <span class="dim">· de cada equipo</span></h2>
+<section class="panel">
+  <table class="list">
+    {% for l in v.log %}
+    <tr><td>{{ when(l.ts) }}</td><td>{{ l.label }}</td>
+      <td class="{{ 'bad' if l.what == 'nuevo' }}">{{ {'entro': 'entró', 'salio': 'salió', 'nuevo': 'nuevo'}.get(l.what, l.what) }}</td></tr>
+    {% else %}
+    <tr><td class="dim">Nada todavía.</td></tr>
+    {% endfor %}
+  </table>
+</section>
+
+<h2>❯ ajustes</h2>
+<form method="post" action="/red/ajustes" class="panel pad settings">
+  <label><input type="checkbox" name="avisar" value="1" {{ 'checked' if v.avisar }}> avisar al iPhone cuando alguien llega o sale de casa</label>
+  <label>webhook <input name="webhook" value="{{ v.webhook }}" placeholder="http://host.docker.internal:5678/webhook/..." aria-label="Webhook"></label>
+  <button>guardar</button>
+  <small>Al webhook (n8n, por ejemplo) va cada llegada, salida, "no queda nadie", "volvió alguien" y cada equipo nuevo:
+    <code>{"evento", "persona", "dispositivo", "en_casa", "ts"}</code>. Los equipos nuevos siempre avisan al iPhone.</small>
+</form>
+<p class="foot">Alguien está en casa mientras uno de sus equipos se vio en los últimos {{ v.away_min }} minutos (un iPhone dormido
+  no contesta todos los escaneos); para salir hacen falta además 3 escaneos sin verlo. "Dirección privada": el teléfono
+  inventa una MAC por red; si la rota, aparece como nuevo. Olvidar un equipo lo borra: si vuelve, avisa de nuevo.</p>
+{% endblock %}

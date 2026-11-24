@@ -1,0 +1,10 @@
+fastapi==0.162.0
+uvicorn==0.54.0
+jinja2==3.1.6
+python-multipart==0.0.20
+httpx==0.28.1
+pytest==9.2.0
+# For the third-party skill scripts under /skills (docker exec mesa python /skills/<skill>/scripts/...):
+requests==2.34.2
+PyYAML==6.0.3
+jsonschema==4.26.0

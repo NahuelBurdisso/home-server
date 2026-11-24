@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="bar"><h1><a href="/contenedores" class="dim">❯ contenedores /</a> {{ name }}</h1>{% include "_ranges.html" %}</div>
+<section class="stats">
+  <div><b>{{ fmt(mem_now, 'B') }}</b><small>RAM ahora</small></div>
+  <div><b>{{ fmt(cpu_now, '%') }}</b><small>CPU ahora</small></div>
+  <div><b>{{ crashes }}</b><small>caídas en el período</small></div>
+  <div><b>{{ starts }}</b><small>arranques</small></div>
+</section>
+<section class="graphs">
+  <div class="panel pad"><h3>RAM</h3>{{ mem }}</div>
+  <div class="panel pad"><h3>Pico de RAM</h3>{{ mem_peak }}</div>
+  <div class="panel pad"><h3>CPU <span class="dim">(100% = un núcleo)</span></h3>{{ cpu }}</div>
+  <div class="panel pad"><h3>Pico de CPU</h3>{{ cpu_peak }}</div>
+</section>
+<h2>❯ eventos</h2>
+<section class="panel"><ul class="events">{% for e in events %}{% include "_event.html" %}{% else %}<li class="dim">Nada en este período.</li>{% endfor %}</ul></section>
+<p class="foot">Logs en vivo: <a href="https://mac-server.tailnet-ejemplo.ts.net:8080" style="color:var(--cyan)">Dozzle</a>.</p>
+{% endblock %}

@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- Soundbox, the local AI audio studio (sound effects, music, voices), native like Ollama so the
+     models run on the GPU (Metal): in a container they ran on the CPU, several times slower.
+     Localhost only (no login of its own): the tailnet reaches it through tailscale serve
+     (https://mac-server.tailnet-ejemplo.ts.net:3023), and it only answers to the names listed below.
+     Built from its git by setup/soundbox.sh into ~/server/soundbox/src; library, settings, models
+     and its audio.cpp runtime live in ~/server/soundbox/data. -->
+<plist version="1.0">
+<dict>
+  <key>Label</key><string>com.server.soundbox</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/opt/homebrew/opt/node@22/bin/node</string>
+    <string>/Users/server/server/soundbox/src/server/dist/cli.js</string>
+    <string>--host</string><string>127.0.0.1</string>
+    <string>--port</string><string>3023</string>
+  </array>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>SOUNDBOX_DATA_DIR</key><string>/Users/server/server/soundbox/data</string>
+    <!-- The names it answers to besides localhost: the tailnet address, and Homepage's status check. -->
+    <key>SOUNDBOX_ALLOWED_HOSTS</key><string>mac-server.tailnet-ejemplo.ts.net:3023,host.docker.internal:3023</string>
+    <key>SOUNDBOX_AUDIOCPP_BACKEND</key><string>metal</string>
+    <!-- soundbox/bin has ffmpeg (a link to Jellyfin's), which it uses for MP3. -->
+    <key>PATH</key><string>/Users/server/server/soundbox/bin:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+    <key>NODE_ENV</key><string>production</string>
+  </dict>
+  <key>WorkingDirectory</key><string>/Users/server/server/soundbox</string>
+  <key>RunAtLoad</key><true/>
+  <key>KeepAlive</key><true/>
+  <key>StandardOutPath</key><string>/Users/server/Library/Logs/soundbox.log</string>
+  <key>StandardErrorPath</key><string>/Users/server/Library/Logs/soundbox.log</string>
+</dict>
+</plist>

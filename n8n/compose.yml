@@ -1,0 +1,33 @@
+# Phase 9: automations.
+services:
+  n8n:
+    image: docker.n8n.io/n8nio/n8n:stable
+    container_name: n8n
+    ports:
+      - "127.0.0.1:5678:5678"  # this Mac only: others reach it through Caddy or tailscale serve
+    environment:
+      TZ: America/Argentina/Cordoba
+      GENERIC_TIMEZONE: America/Argentina/Cordoba
+      # Only HTTPS: https://mac-server.tailnet-ejemplo.ts.net:5678 (tailscale serve); http://auto.lan
+      # forwards there (caddy/Caddyfile), so the login cookie is HTTPS-only.
+      N8N_SECURE_COOKIE: "true"
+      N8N_WEBHOOK_URL: https://mac-server.tailnet-ejemplo.ts.net:5678/
+      N8N_PROXY_HOPS: "1"
+      # The workflows in ./workflows read the ntfy topic as $env.NTFY_TOPIC (secrets/n8n.env).
+      N8N_BLOCK_ENV_ACCESS_IN_NODE: "false"
+      # Old executions are deleted after 14 days (or past 2000), but SQLite keeps the freed space
+      # inside database.sqlite until a VACUUM, so it runs on every start (monthly-update.sh restarts n8n).
+      EXECUTIONS_DATA_PRUNE: "true"
+      EXECUTIONS_DATA_MAX_AGE: "336"
+      EXECUTIONS_DATA_PRUNE_MAX_COUNT: "2000"
+      DB_SQLITE_VACUUM_ON_STARTUP: "true"
+    env_file: ../secrets/n8n.env
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ./data:/home/node/.n8n
+      # Workflows as JSON, versioned in git: imported from here, exported back every night (backup.sh).
+      - ./workflows:/workflows
+      # The Mac's status for the weekly summary (setup/n8n-feed.sh). n8n may only read files here.
+      - ./feed:/home/node/.n8n-files:ro
+    restart: unless-stopped

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key><string>com.server.restore-drill</string>
+  <key>ProgramArguments</key>
+  <array><string>/Users/server/server/setup/restore-drill.sh</string></array>
+  <!-- Sundays at 5:00, after the nightly backup and before the 20 h summary that reports it. -->
+  <key>StartCalendarInterval</key>
+  <dict><key>Weekday</key><integer>0</integer><key>Hour</key><integer>5</integer><key>Minute</key><integer>0</integer></dict>
+  <key>StandardOutPath</key><string>/Users/server/Library/Logs/restore-drill.log</string>
+  <key>StandardErrorPath</key><string>/Users/server/Library/Logs/restore-drill.log</string>
+</dict>
+</plist>

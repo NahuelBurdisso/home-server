@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block content %}
+<form class="card" method="get" action="/">
+  <div class="search-row">
+    <input type="search" name="q" value="{{ q }}" placeholder="garantía heladera, contrato, epec…" aria-label="Buscar">
+    {% if tipo %}<input type="hidden" name="tipo" value="{{ tipo }}">{% endif %}
+    <button class="button">Buscar</button>
+  </div>
+</form>
+
+<nav class="kinds">
+  <a href="/?q={{ q | urlencode }}" class="{{ 'on' if not tipo }}">Todo</a>
+  {% for k, (label, emoji, _) in KINDS.items() if counts.get(k) %}
+  <a href="/?tipo={{ k }}&q={{ q | urlencode }}" class="{{ 'on' if tipo == k }}">{{ emoji }} {{ label }} {{ counts[k] }}</a>
+  {% endfor %}
+</nav>
+
+{% if soon %}
+<section class="card">
+  <h2>Vencen pronto</h2>
+  <ul class="docs">{% for d in soon %}{% include "_doc.html" %}{% endfor %}</ul>
+</section>
+{% endif %}
+
+<section class="card">
+  {% if q %}<h2>{{ docs | length }} con “{{ q }}”</h2>{% endif %}
+  <ul class="docs">{% for d in docs %}{% include "_doc.html" %}{% else %}
+    <li class="muted" style="padding:12px 0">{{ 'Nada con esas palabras.' if q else 'Todavía no hay papeles. Tocá Subir, o compartilos desde el iPhone.' }}</li>
+  {% endfor %}</ul>
+</section>
+{% endblock %}

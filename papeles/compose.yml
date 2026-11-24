@@ -1,0 +1,25 @@
+# The house's documents (bills, warranties, contracts, prescriptions, taxes): found by any word in
+# them; photos and scans are read by OCR on this Mac. Built here, not pulled.
+# Tailnet only, through tailscale serve: https://mac-server.tailnet-ejemplo.ts.net:3017
+# No Caddy name on purpose, like Finanzas: these are private papers.
+services:
+  papeles:
+    build: .
+    image: papeles:local
+    container_name: papeles
+    ports:
+      - "127.0.0.1:3017:8000"  # this Mac only: others reach it through tailscale serve
+    environment:
+      TZ: America/Argentina/Cordoba
+      # Who may open it (Tailscale login, as in the admin console). Others get a 403.
+      PAPELES_ALLOWED_LOGINS: NahuelBurdisso@github
+      PAPELES_URL: https://mac-server.tailnet-ejemplo.ts.net:3017
+      # A confirmed expiry becomes a reminder there (its /api/recordatorio).
+      RECORDATORIOS_URL: http://host.docker.internal:3014
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ./data:/data
+    labels:
+      diun.enable: "false"  # local image, nothing to watch
+    restart: unless-stopped

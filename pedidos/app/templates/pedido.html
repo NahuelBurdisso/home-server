@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+{% block content %}
+{% set draft = order.status == 'borrador' %}
+{% set saved = order.status == 'guardado' %}
+{% if saved %}
+<h1>{{ order.name }} <span class="pill {{ order.status }}">{{ STATUS[order.status] }}</span><small>{{ p.name }}</small></h1>
+{% else %}
+<h1>{{ p.name }} <span class="pill {{ order.status }}">{{ STATUS[order.status] }}</span></h1>
+{% endif %}
+
+{% if p.kind == 'pedix' and p.catalog_error %}
+<p class="warn">No pude leer el catálogo ({{ p.catalog_error }}). Precios del {{ when(p.catalog_at) }}.</p>
+{% endif %}
+
+<section class="card">
+  {% if lines %}
+  <ul class="lines">
+    {% for l in lines %}
+    <li>
+      <div class="what">
+        <span>
+          {% if l.ext_id %}<strong>{{ l.qty }} × {{ l.product }}</strong>{% if l.presentation %} ({{ l.presentation }}){% endif %}
+          {% else %}<strong>{{ l.text }}</strong>{% endif %}
+          {% if l.ext_id and l.text != l.product %}<span class="from">· de la lista: {{ l.text }}</span>{% endif %}
+          {% if not l.ext_id and p.kind == 'pedix' %}<span class="lost">· va como está escrito</span>{% endif %}
+        </span>
+        <span style="white-space: nowrap">{{ money(l.qty * l.unit_price) if l.unit_price is not none else '' }}</span>
+      </div>
+      {% if editable %}
+      <div class="ctl">
+        {% if l.ext_id %}
+        <form method="post" action="/l/{{ l.id }}/menos"><button class="qty" aria-label="Uno menos">−</button></form>
+        <span class="n">{{ l.qty }}</span>
+        <form method="post" action="/l/{{ l.id }}/mas"><button class="qty" aria-label="Uno más">+</button></form>
+        {% endif %}
+        {% if l.alternatives %}
+        <form method="post" action="/l/{{ l.id }}/cambiar" class="pick">
+          <select name="elegido" aria-label="Cambiar producto" onchange="this.form.submit()">
+            {% for a in l.alternatives %}<option value="{{ a.value }}" {{ 'selected' if a.on }}>{{ a.label }}</option>{% endfor %}
+          </select>
+          <noscript><button class="link">Cambiar</button></noscript>
+        </form>
+        {% else %}<span class="pick"></span>{% endif %}
+        <form method="post" action="/l/{{ l.id }}/borrar"><button class="qty" aria-label="Sacar">×</button></form>
+      </div>
+      {% endif %}
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="muted">Sin nada todavía.</p>
+  {% endif %}
+  <p class="row-between" style="margin-top:12px"><span>Total estimado</span><span class="total">{{ money(total) }}</span></p>
+  {% if short %}<p class="warn" style="margin:8px 0 0">El mínimo de {{ p.name }} es {{ money(p.min_purchase) }}: faltan {{ money(short) }}.</p>{% endif %}
+  <p class="note">Precios estimados: pesan y cobran ellos.</p>
+</section>
+
+{% if editable %}
+<section class="card">
+  <form method="post" action="/p/{{ order.id }}/agregar" class="quick">
+    <label for="texto">Agregar</label>
+    <div class="quick-row">
+      <input id="texto" name="texto" list="catalogo" autocomplete="off" placeholder="1 kg de cebolla">
+      <button class="button">+</button>
+    </div>
+    <datalist id="catalogo">{% for n in names %}<option value="{{ n }}">{% endfor %}</datalist>
+  </form>
+  {% if usual %}
+  <h2 style="margin-top:14px">Lo de siempre</h2>
+  <form class="chips" method="post" action="/p/{{ order.id }}/agregar">
+    <input type="hidden" name="pres_id" value="">
+    {% for u in usual %}<button name="ext_id" value="{{ u.ext_id }}">+ {{ u.product }}</button>{% endfor %}
+  </form>
+  {% endif %}
+</section>
+{% endif %}
+
+<section class="card">
+  {% if saved %}
+  <form method="post" action="/p/{{ order.id }}/usar" class="buttons"><button class="button">Usar este pedido</button></form>
+  <p class="note">Lo suma al borrador de {{ p.name }} con los precios de hoy. No manda nada.</p>
+  <form method="post" action="/p/{{ order.id }}/nombre" class="quick" style="margin-top:14px">
+    <label for="nombre">Nombre</label>
+    <div class="quick-row">
+      <input id="nombre" name="nombre" value="{{ order.name }}" maxlength="60" autocomplete="off" enterkeyhint="done">
+      <button class="button soft">Cambiar nombre</button>
+    </div>
+  </form>
+  {% elif draft %}
+  <h2>Mandarlo</h2>
+  {% if links.falta %}<p class="warn">{{ p.name }}: {{ links.falta }} <a href="/proveedores">Cargalo acá</a>.</p>{% endif %}
+  <div class="buttons">
+    {% if links.whatsapp %}<a class="button" href="{{ links.whatsapp }}">Mandar por WhatsApp</a>{% endif %}
+    {% if links.tienda %}<a class="button {{ 'soft' if links.whatsapp }}" href="{{ links.tienda }}" target="_blank" rel="noopener noreferrer">Abrir la tienda</a>{% endif %}
+    <form method="post" action="/p/{{ order.id }}/enviado"><button class="button soft" style="width:100%">Ya lo pedí</button></form>
+  </div>
+  {% if p.kind == 'web' %}<p class="note">Tildá acá a medida que lo cargás en el carrito de la tienda.</p>
+  <ul class="items">{% for l in lines %}<li><label style="display:flex;gap:10px;align-items:center;padding:6px 0"><input type="checkbox"> {{ l.text }}</label></li>{% endfor %}</ul>
+  {% else %}
+  <details><summary class="muted">Ver el mensaje</summary><pre class="msg">{{ message }}</pre></details>
+  {% endif %}
+  {% elif order.status == 'enviado' %}
+  <p>Pedido {{ when(order.sent_at) }}.</p>
+  <div class="buttons"><form method="post" action="/p/{{ order.id }}/recibido"><button class="button" style="width:100%">Llegó</button></form></div>
+  {% else %}
+  <p class="muted">{{ STATUS[order.status] }}{% if order.received_at %} {{ when(order.received_at) }}{% endif %}.</p>
+  {% endif %}
+</section>
+{% if not saved and lines %}
+<section class="card">
+  <form method="post" action="/p/{{ order.id }}/guardar" class="quick">
+    <label for="guardar">Guardar para repetir</label>
+    <div class="quick-row">
+      <input id="guardar" name="nombre" maxlength="60" autocomplete="off" enterkeyhint="done" placeholder="La compra de la semana">
+      <button class="button soft">Guardar</button>
+    </div>
+  </form>
+  <p class="note">Sin nombre, se guarda como «{{ p.name }}».</p>
+</section>
+{% endif %}
+{% if saved %}
+<form method="post" action="/p/{{ order.id }}/borrar"><button class="danger">Borrar el guardado</button></form>
+{% elif order.status in ('borrador', 'enviado') %}
+<form method="post" action="/p/{{ order.id }}/cancelar"><button class="danger">Cancelar el pedido</button></form>
+{% endif %}
+{% endblock %}

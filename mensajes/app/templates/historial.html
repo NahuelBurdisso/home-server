@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Historial</h1>
+{% if rows %}
+<section class="card">
+  {% include "_chat.html" %}
+</section>
+{% if more %}<a class="more" href="/historial?antes={{ more }}">Anteriores →</a>{% endif %}
+{% else %}
+<div class="card empty"><p class="muted">Todavía no hubo mensajes.</p></div>
+{% endif %}
+{% endblock %}

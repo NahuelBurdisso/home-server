@@ -1,0 +1,123 @@
+{
+  "id": "dolarMepAvisos01",
+  "name": "Dólar · avisos del MEP",
+  "description": null,
+  "active": true,
+  "nodes": [
+    {
+      "id": "e492fa8b-9d08-5975-9162-3694b28ba72e",
+      "name": "Hábiles 11 a 17 h",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 11-17 * * 1-5"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "4ee36c0d-7308-53c6-9c97-48939fea81a3",
+      "name": "Cotizaciones",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        220,
+        0
+      ],
+      "parameters": {
+        "url": "https://dolarapi.com/v1/dolares",
+        "options": {
+          "timeout": 20000
+        }
+      }
+    },
+    {
+      "id": "f3caeff3-e2de-5eb9-b34a-bf3d6eda6ab0",
+      "name": "¿Hay que avisar?",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        440,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// Tells you when the MEP moved 2% or more since the last notice, or crossed a limit you set.\nconst UMBRAL = 0.02;\nconst AVISAR_SI_SUPERA = null;   // por ejemplo 1700\nconst AVISAR_SI_BAJA_DE = null;  // por ejemplo 1400\n\nconst all = $input.all().map(i => i.json);\nconst mep = all.find(d => d.casa === 'bolsa')?.venta;\nconst blue = all.find(d => d.casa === 'blue')?.venta;\nif (!mep) return [];\nconst fmt = n => '$ ' + Math.round(n).toLocaleString('es-AR');\nconst s = $getWorkflowStaticData('global');\nconst out = [];\nif (!s.base) {\n  s.base = mep;  // first run: just remember where it starts\n} else {\n  const cambio = (mep - s.base) / s.base;\n  if (Math.abs(cambio) >= UMBRAL) {\n    const pct = (Math.abs(cambio) * 100).toFixed(1).replace('.', ',');\n    out.push(`El MEP ${cambio > 0 ? 'subió' : 'bajó'} ${pct}% desde el último aviso (${fmt(s.base)}).`);\n    s.base = mep;\n  }\n}\nfor (const [lim, arriba] of [[AVISAR_SI_SUPERA, true], [AVISAR_SI_BAJA_DE, false]]) {\n  if (!lim) continue;\n  const key = `${arriba ? 'sobre' : 'bajo'}_${lim}`;\n  const cruzado = arriba ? mep >= lim : mep <= lim;\n  if (cruzado && !s[key]) out.push(`${arriba ? 'Pasó' : 'Bajó de'} ${fmt(lim)}.`);\n  s[key] = cruzado;\n}\nif (!out.length) return [];\nreturn [{ json: {\n  title: `Dólar MEP ${fmt(mep)}`, message: out.join(' ') + (blue ? ` Blue ${fmt(blue)}.` : ''),\n  tag: 'dollar', click: 'https://mac-server.tailnet-ejemplo.ts.net:3013/evolucion?ver=usd',\n} }];\n"
+      }
+    },
+    {
+      "id": "b4aedb2f-10b4-5d0e-a3c4-2785e59d9b46",
+      "name": "Avisar por ntfy",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        660,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:8091",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ topic: $env.NTFY_TOPIC, title: $json.title, message: $json.message, tags: [$json.tag || 'robot'], click: $json.click, priority: $json.priority || 3 }) }}",
+        "options": {
+          "timeout": 20000
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Hábiles 11 a 17 h": {
+      "main": [
+        [
+          {
+            "node": "Cotizaciones",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cotizaciones": {
+      "main": [
+        [
+          {
+            "node": "¿Hay que avisar?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "¿Hay que avisar?": {
+      "main": [
+        [
+          {
+            "node": "Avisar por ntfy",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "America/Argentina/Cordoba",
+    "saveDataSuccessExecution": "all",
+    "saveDataErrorExecution": "all"
+  },
+  "pinData": {},
+  "meta": {
+    "note": "Thresholds are at the top of the '¿Hay que avisar?' node."
+  },
+  "tags": []
+}

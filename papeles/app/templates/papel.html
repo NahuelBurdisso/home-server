@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block content %}
+{% if nuevo %}<p class="ok-msg">✓ Guardado como <strong>{{ KINDS[d.kind][0] }}</strong>. Corregí lo que haga falta.</p>{% endif %}
+{% if msg %}<p class="ok-msg">{{ msg }}</p>{% endif %}
+{% if error %}<p class="warn">{{ error }}</p>{% endif %}
+
+{% if d.expires_found and not d.expires %}
+<form class="card added" method="post" action="/d/{{ d.id }}/aviso">
+  <p>Parece que vence el <strong>{{ d.expires_found | dmy }}</strong>.</p>
+  <button class="button">Avisarme antes</button>
+</form>
+{% endif %}
+
+<section class="card">
+  {% if d.mime == 'application/pdf' %}
+  <iframe class="preview" src="/f/{{ d.id }}" title="{{ d.title }}"></iframe>
+  {% elif d.mime.startswith('image/') and d.mime != 'image/heic' %}
+  <img class="preview" src="/f/{{ d.id }}" alt="{{ d.title }}">
+  {% else %}
+  <p class="muted">Sin vista previa para este formato.</p>
+  {% endif %}
+  <p class="note"><a href="/f/{{ d.id }}" target="_blank">Abrir</a> · <a href="/f/{{ d.id }}?bajar=1">Bajar</a> · {{ (d.size / 1024) | round | int }} KB · {{ d.original_name }}</p>
+</section>
+
+<form class="card form" method="post" action="/d/{{ d.id }}">
+  <label>Nombre <input name="title" value="{{ d.title }}"></label>
+  <label>Tipo
+    <select name="kind">{% for k, (label, emoji, _) in KINDS.items() %}<option value="{{ k }}" {{ 'selected' if k == d.kind }}>{{ emoji }} {{ label }}</option>{% endfor %}</select>
+  </label>
+  <div class="two">
+    <label>Fecha <input type="date" name="doc_date" value="{{ d.doc_date or '' }}"></label>
+    <label>Vence <input type="date" name="expires" value="{{ d.expires or '' }}"></label>
+  </div>
+  <p class="note">Con fecha de vencimiento, Recordatorios te avisa una semana antes, el día anterior y ese día.</p>
+  <label>Notas <textarea name="notes" rows="2">{{ d.notes }}</textarea></label>
+  <button class="button">Guardar</button>
+</form>
+
+{% if d.text.strip() %}
+<section class="card">
+  <details><summary>Texto ({{ 'leído con OCR' if not d.mime == 'application/pdf' else 'del PDF' }})</summary><pre class="ocr">{{ d.text }}</pre></details>
+</section>
+{% endif %}
+<form method="post" action="/d/{{ d.id }}/borrar" onsubmit="return confirm('¿Borrar este papel? No se puede deshacer.')">
+  <button class="danger">Borrar</button>
+</form>
+{% endblock %}

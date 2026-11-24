@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Historial</h1>
+{% if rows %}
+<section class="card">
+  <ul class="list">
+    {% for o in rows %}
+    <li class="{{ 'past' if o.status == 'cancelado' }}"><a class="row" href="/p/{{ o.id }}">
+      <span>{{ o.provider }} <small>{{ when(o.sent_at or o.created_at) }}</small></span>
+      <strong>{{ money(o.total_est) if o.total_est else '' }}</strong>
+      <span class="pill" style="flex:none">{{ STATUS[o.status] }}</span>
+    </a></li>
+    {% endfor %}
+  </ul>
+</section>
+{% else %}
+<div class="card empty"><p class="muted">Todavía no se pidió nada.</p></div>
+{% endif %}
+{% endblock %}

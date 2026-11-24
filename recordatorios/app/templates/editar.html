@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>{{ 'Editar' if r.id else 'Nuevo recordatorio' }}</h1>
+{% if error %}<p class="warn">{{ error }}</p>{% endif %}
+{% set chosen = (r.alerts or '').split(',') %}
+<form class="form card" method="post" action="{{ '/r/%d' % r.id if r.id else '/nuevo' }}">
+  <label>Qué
+    <input name="titulo" value="{{ r.title }}" required placeholder="Dentista, cumple de Juan…">
+  </label>
+  <div class="two">
+    <label>Fecha <input type="date" name="fecha" value="{{ r.date }}" required></label>
+    <label>Hora <input type="time" name="hora" value="{{ r.time or '' }}"></label>
+  </div>
+  <p class="note">Sin hora = todo el día (te aviso a las 9).</p>
+  <label>Repetir
+    <select name="repetir">
+      {% for k, v in REPEATS.items() %}<option value="{{ k }}" {{ 'selected' if r.repeat == k }}>{{ v }}</option>{% endfor %}
+    </select>
+  </label>
+  <fieldset class="checks">
+    <legend>Avisarme</legend>
+    {% for minutes, labels in ALERTS.items() %}
+    <label><input type="checkbox" name="avisos" value="{{ minutes }}" {{ 'checked' if minutes|string in chosen }}>
+      <span>{{ labels[0] }}{% if labels[1] %} <small>(todo el día: {{ labels[1]|lower }})</small>{% endif %}</span></label>
+    {% endfor %}
+  </fieldset>
+  <label>Notas <textarea name="notas" rows="2">{{ r.notes }}</textarea></label>
+  {% for link in links(r.notes) %}<p class="note link"><a href="{{ link }}" target="_blank" rel="noopener">{{ link }}</a></p>{% endfor %}
+  <button class="button">Guardar</button>
+</form>
+{% if r.id %}
+{% if next %}<p class="footnote">Próxima vez: {{ next.strftime('%d/%m/%Y') }}{% if r.time %} {{ r.time }}{% endif %}</p>{% endif %}
+<form method="post" action="/r/{{ r.id }}/borrar" onsubmit="return confirm('¿Borrar este recordatorio?')">
+  <button class="danger">Borrar</button>
+</form>
+{% endif %}
+{% endblock %}

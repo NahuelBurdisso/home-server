@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="bar"><h1>❯ eventos</h1>
+  <div class="ranges">
+    {% for key, label in [('todo', 'todo'), ('alertas', 'alertas'), ('avisos', 'avisos'), ('docker', 'docker')] %}<a href="?f={{ key }}&d={{ d }}&q={{ q | urlencode }}" class="{{ 'on' if f == key }}">{{ label }}</a>{% endfor %}
+    <span class="sep"></span>
+    {% for n in [1, 7, 30, 365] %}<a href="?f={{ f }}&d={{ n }}&q={{ q | urlencode }}" class="{{ 'on' if d == n }}">{{ n }}d</a>{% endfor %}
+  </div>
+</div>
+<form class="search" method="get"><input type="hidden" name="f" value="{{ f }}"><input type="hidden" name="d" value="{{ d }}">
+  <input type="search" name="q" value="{{ q }}" placeholder="buscar: backup, n8n, internet…" aria-label="Buscar en los eventos">
+  {% if q %}<span class="dim">{{ count }} encontrado{{ 's' if count != 1 }}</span>{% endif %}
+</form>
+{% for day, items in days.items() %}
+<h2>❯ {{ day }}</h2>
+<section class="panel"><ul class="events">{% for e in items %}{% include "_event.html" %}{% endfor %}</ul></section>
+{% else %}
+<p class="foot">Nada en este período.</p>
+{% endfor %}
+<p class="foot">Avisos: todo lo que llegó al iPhone por ntfy (se guarda acá para siempre; ntfy lo borra a las 72 h). Docker: contenedores que arrancaron, se detuvieron, se cayeron o dejaron de responder.</p>
+{% endblock %}

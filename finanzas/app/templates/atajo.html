@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% block content %}
+<header class="month-nav">
+  <a href="/cargar" aria-label="Volver">‹</a><h1>Atajo del iPhone</h1><span></span>
+</header>
+
+<section class="card">
+  <h2>Qué hace</h2>
+  <p>Desde el mail de BBVA, la app de Mercado Pago o Archivos: tocás el archivo →
+    <strong>Compartir → Finanzas</strong>, y se carga solo. Te avisa cuántos movimientos sumó.</p>
+  <p class="note">Funciona con Tailscale prendido, como el resto de la app.</p>
+</section>
+
+<section class="card steps">
+  <h2>Crearlo (una sola vez, 2 minutos)</h2>
+  <ol>
+    <li>Abrí la app <strong>Atajos</strong> y tocá <strong>＋</strong>. Ponele de nombre <strong>Finanzas</strong>.</li>
+    <li>Tocá <strong>ⓘ</strong> (abajo) y activá <strong>Mostrar en la hoja de compartir</strong>.
+      En <em>Tipos de entrada</em> dejá solo <strong>Archivos</strong> y <strong>PDF</strong>.</li>
+    <li>Agregá la acción <strong>Obtener contenido de la URL</strong> y pegá esta dirección:
+      <code class="copy" id="u">{{ url }}</code>
+      <button type="button" class="chip" onclick="navigator.clipboard.writeText(document.getElementById('u').textContent).then(() => this.textContent = 'Copiada ✓')">Copiar dirección</button>
+    </li>
+    <li>Tocá la flecha de esa acción y elegí:
+      <ul>
+        <li><strong>Método:</strong> POST</li>
+        <li><strong>Cuerpo de la solicitud:</strong> Formulario</li>
+        <li><strong>Agregar campo → Archivo</strong>: clave <code>files</code>, valor <strong>Entrada del atajo</strong></li>
+      </ul>
+    </li>
+    <li>Agregá la acción <strong>Mostrar notificación</strong> y como texto elegí <strong>Contenido de la URL</strong>.</li>
+    <li>Listo. Probalo: abrí un resumen y tocá <strong>Compartir → Finanzas</strong>.</li>
+  </ol>
+  <p class="note">Si la notificación dice "Solo para el dueño del tailnet", el iPhone está con otra
+    cuenta de Tailscale. Si no carga nada, revisá que Tailscale esté conectado.</p>
+</section>
+<section class="card steps" id="siri">
+  <h2>Gastos en efectivo con Siri</h2>
+  <p>Decís <strong>"Oye Siri, gasto"</strong>, dictás <em>"8500 en la verdulería"</em> y queda anotado
+    (efectivo, con fecha de hoy salvo que digas <em>ayer</em>, <em>el lunes</em> o <em>el 15</em>).
+    Entiende <em>12 mil</em>, <em>15 lucas</em>, <em>cobré 50000 de…</em> y <em>compré dólares por…</em>.
+    Lo que pagás con tarjeta o Mercado Pago no lo anota: llega con su resumen.</p>
+  <ol>
+    <li>En <strong>Atajos</strong>, tocá <strong>＋</strong> y ponele de nombre <strong>Gasto</strong> (es lo que le decís a Siri).</li>
+    <li>Agregá <strong>Dictar texto</strong> (idioma: Español).</li>
+    <li>Agregá <strong>Obtener contenido de la URL</strong> con esta dirección:
+      <code class="copy" id="g">{{ gasto_url }}</code>
+      <button type="button" class="chip" onclick="navigator.clipboard.writeText(document.getElementById('g').textContent).then(() => this.textContent = 'Copiada ✓')">Copiar dirección</button>
+      <ul>
+        <li><strong>Método:</strong> POST · <strong>Cuerpo:</strong> JSON</li>
+        <li><strong>Agregar campo → Texto</strong>: clave <code>texto</code>, valor <strong>Texto dictado</strong></li>
+      </ul>
+    </li>
+    <li>Agregá <strong>Decir texto</strong> (o <strong>Mostrar notificación</strong>) con <strong>Contenido de la URL</strong>.</li>
+  </ol>
+  <p class="note">Si te equivocaste, borralo desde Movimientos: los cargados a mano tienen el botón Borrar.</p>
+</section>
+<section class="card steps" id="pagos">
+  <h2>Los pagos del mes con Siri</h2>
+  <p><strong>"Oye Siri, qué me falta pagar"</strong> te dice cuáles de los <a href="/pagos">pagos del mes</a> faltan y
+    cuándo vencen. <strong>"Oye Siri, pagué"</strong> y dictás <em>"la luz"</em>: lo marca pagado este mes (no anota ningún
+    gasto; si lo pagaste con el banco o Mercado Pago, se marca solo cuando llega el movimiento).</p>
+  <h3>Qué me falta pagar</h3>
+  <ol>
+    <li>En <strong>Atajos</strong>, tocá <strong>＋</strong> y ponele de nombre <strong>Qué me falta pagar</strong>.</li>
+    <li>Agregá <strong>Obtener contenido de la URL</strong> con esta dirección (método GET, como viene):
+      <code class="copy" id="p">{{ pagos_url }}</code>
+      <button type="button" class="chip" onclick="navigator.clipboard.writeText(document.getElementById('p').textContent).then(() => this.textContent = 'Copiada ✓')">Copiar dirección</button>
+    </li>
+    <li>Agregá <strong>Decir texto</strong> con <strong>Contenido de la URL</strong>.</li>
+  </ol>
+  <h3>Pagué</h3>
+  <ol>
+    <li>Otro atajo nuevo, de nombre <strong>Pagué</strong>, con <strong>Dictar texto</strong> (Español).</li>
+    <li><strong>Obtener contenido de la URL</strong> con esta dirección:
+      <code class="copy" id="pp">{{ pagar_url }}</code>
+      <button type="button" class="chip" onclick="navigator.clipboard.writeText(document.getElementById('pp').textContent).then(() => this.textContent = 'Copiada ✓')">Copiar dirección</button>
+      <ul>
+        <li><strong>Método:</strong> POST · <strong>Cuerpo:</strong> JSON</li>
+        <li><strong>Agregar campo → Texto</strong>: clave <code>texto</code>, valor <strong>Texto dictado</strong></li>
+      </ul>
+    </li>
+    <li><strong>Decir texto</strong> con <strong>Contenido de la URL</strong>.</li>
+  </ol>
+  <p class="note">Si marcaste uno sin querer, en <a href="/pagos">Pagos del mes</a> tocá Desmarcar.</p>
+</section>
+{% endblock %}

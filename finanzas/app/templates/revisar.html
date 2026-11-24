@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block content %}
+<header class="month-nav">
+  <a href="{{ '/gastos?m=' ~ month if month else '/gastos' }}" aria-label="Volver">‹</a><h1>Revisar</h1><span></span>
+</header>
+
+{% if running %}
+<meta http-equiv="refresh" content="6">
+<p class="warn soft">✨ La IA está sugiriendo categorías… esta página se actualiza sola.</p>
+{% elif error %}
+<p class="warn">{{ error }} Podés categorizar a mano igual.</p>
+{% endif %}
+
+{% if not rows %}
+<section class="card empty">
+  <h2>Todo en orden</h2>
+  <p>Todos los gastos{{ ' de ' ~ month_name(month) if month }} tienen categoría confirmada.</p>
+  <a class="button" href="/gastos{{ '?m=' ~ month if month }}">Ver gastos</a>
+</section>
+{% else %}
+<section class="card">
+  <p class="note">Confirmá con ✓ o tocá el gasto para elegir otra categoría. Lo que confirmás se aplica
+    a todos los gastos de ese comercio, también a los que vengan.</p>
+  {% if unsuggested and clf.name != 'none' and not running %}
+  <form method="post" action="/revisar/ia"><button class="button wide">✨ Sugerir con {{ clf.name }} ({{ unsuggested }})</button></form>
+  {% endif %}
+  <ul class="list review">
+    {% for t in rows %}
+    <li>
+      <a class="row" href="/movimientos/{{ t.id }}?back={{ ('/revisar' ~ ('?m=' ~ month if month else '')) | urlencode }}">
+        <span>{{ t.description }}
+          <small>{{ t.date[8:10] }}/{{ t.date[5:7] }} · {{ ACCOUNTS[t.account] }}</small>
+          {% set guess = t.category and t.category != 'otros.sin' %}
+          <em class="{{ 'none' if not guess }}">{{ ('✨ ' ~ cat_label(t.category)) if guess else 'Elegí una categoría ›' }}</em></span>
+        <strong>{{ ars(-t.amount) }}</strong>
+      </a>
+      {% if t.category and t.category != 'otros.sin' %}
+      <form method="post" action="/revisar/{{ t.id }}/ok">
+        <input type="hidden" name="back" value="/revisar{{ '?m=' ~ month if month }}">
+        <button class="ok" aria-label="Confirmar {{ cat_label(t.category) }}">✓</button>
+      </form>
+      {% endif %}
+    </li>
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}
+{% endblock %}

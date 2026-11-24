@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- Phase 5: CPU, RAM, disk and temperature graphs in the browser, on port 61208.
+     Localhost only: open it at http://graficos.lan (Caddy asks for a password). -->
+<plist version="1.0">
+<dict>
+  <key>Label</key><string>com.server.glances</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/opt/homebrew/bin/glances</string>
+    <string>-w</string>
+    <string>--bind</string><string>127.0.0.1</string>
+    <string>--disable-check-update</string>
+  </array>
+  <key>RunAtLoad</key><true/>
+  <key>KeepAlive</key><true/>
+  <key>StandardOutPath</key><string>/Users/server/Library/Logs/glances.log</string>
+  <key>StandardErrorPath</key><string>/Users/server/Library/Logs/glances.log</string>
+</dict>
+</plist>

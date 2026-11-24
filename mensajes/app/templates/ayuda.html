@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Cómo se usa</h1>
+
+<section class="card">
+  <h2>Lo que entiende</h2>
+  <p style="white-space: pre-wrap">{{ help }}</p>
+  <p class="note">Escribile «ayuda» al bot y te manda esto mismo. Con <code>/</code> tenés el menú: /lista, /agenda, /saldos, /pagos, /borrar…</p>
+</section>
+
+<section class="card">
+  <h2>En el iPhone</h2>
+  <ol class="steps">
+    <li>Fijá el chat con {% if bot.username %}<a href="https://t.me/{{ bot.username }}">@{{ bot.username }}</a>{% else %}el bot{% endif %} arriba de todo.</li>
+    <li>Para audios: mantené apretado el micrófono del chat, hablá y soltá.</li>
+    <li>Para guardar una factura: Compartir → Telegram → el bot.</li>
+  </ol>
+</section>
+
+<section class="card">
+  <h2>En un grupo</h2>
+  <p>Podés sumar al bot a un grupo (por ejemplo «Casa» con quien vivas). Ahí solo responde a lo que reconoce seguro («comprar…», «gasté…», «recordame…», «¿qué falta?», o lo que empiece con /), a las personas autorizadas; el resto de la charla la ignora.</p>
+  <p class="note">Para que lea los mensajes sin «/», en @BotFather: <code>/setprivacy</code> → el bot → <strong>Disable</strong>, y después sacalo y volvé a sumarlo al grupo.</p>
+</section>
+
+<section class="card">
+  <h2>Mandar avisos por Telegram (n8n, scripts)</h2>
+  <p><code>POST http://host.docker.internal:3019/api/enviar</code> con el texto como cuerpo, o JSON <code>{"texto": "...", "a": "Sofi"}</code>.</p>
+  <p class="note">Sin <code>a</code> le llega a quien tenga <em>avisos</em> en Personas. Solo a personas autorizadas. Desde el Mac: <code>http://127.0.0.1:3019/api/enviar</code>.</p>
+</section>
+
+<section class="card">
+  <h2>Privacidad</h2>
+  <p>El reconocimiento de voz (Whisper) y la IA (qwen3) corren en este Mac. Los mensajes con el bot pasan por los servidores de Telegram, como cualquier chat de Telegram que no sea «secreto».</p>
+</section>
+{% endblock %}

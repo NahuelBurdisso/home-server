@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#1d4ed8">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Mesa">
+  <title>{% block title %}Mesa{% endblock %}</title>
+  <link rel="stylesheet" href="/static/style.css?v=10">
+  <link rel="apple-touch-icon" href="/static/icon.png">
+</head>
+<body>
+  <main>
+    {% if ok %}<p class="flash">{{ ok }}</p>{% endif %}
+    {% if error %}<p class="flash bad"><strong>No se hizo.</strong> {{ error }}</p>{% endif %}
+    {% block content %}{% endblock %}
+  </main>
+  <nav class="tabs">
+    <a href="/" class="{{ 'on' if page in ('mesa', 'posicion') }}"><span>◉</span>Mesa</a>
+    <a href="/decisiones" class="{{ 'on' if page in ('decisiones', 'decision') }}"><span>?</span>Decisiones</a>
+    <a href="/operaciones" class="{{ 'on' if page == 'operaciones' }}"><span>⇄</span>Operaciones</a>
+    <a href="/reglas" class="{{ 'on' if page == 'reglas' }}"><span>§</span>Reglas</a>
+    <a href="/ajustes" class="{{ 'on' if page == 'ajustes' }}"><span>⚙</span>Ajustes</a>
+  </nav>
+</body>
+</html>

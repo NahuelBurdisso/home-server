@@ -1,0 +1,178 @@
+{
+  "id": "vencimientosTarj",
+  "name": "Finanzas · vencimientos de la tarjeta a Recordatorios",
+  "description": null,
+  "active": true,
+  "nodes": [
+    {
+      "id": "db5c8755-ac3c-597b-92da-e42913f44ae6",
+      "name": "9:30 y 19:30",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "30 9,19 * * *"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "49b8fef9-75cb-5ad4-b6a5-f55ff9c9b11b",
+      "name": "Finanzas",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        220,
+        0
+      ],
+      "parameters": {
+        "url": "http://host.docker.internal:3013/api/estado",
+        "options": {
+          "timeout": 20000
+        }
+      }
+    },
+    {
+      "id": "e8ec8c41-a3b3-53ce-904e-144411749e29",
+      "name": "Un recordatorio por vencimiento",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        440,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// Recordatorios ignores a title it already has on that date, so sending them every day is fine.\nconst st = $input.first().json;\nconst dmy = d => d.split('-').reverse().join('/');\nreturn (st.vencimientos || []).map(v => {\n  const montos = [v.total, v.total_usd].filter(Boolean).join(' + ');\n  return { json: {\n    titulo: `Pagar ${v.cuenta}` + (montos ? ` (${montos})` : ''),\n    fecha: v.vence, hora: '10:00', avisos: [0, 1440],\n    notas: (v.minimo ? `Pago mínimo ${v.minimo}. ` : '') + (v.cierre ? `Cerró el ${dmy(v.cierre)}.` : 'Del aviso de BBVA: falta el PDF.'),\n  } };\n});\n"
+      }
+    },
+    {
+      "id": "049de113-274a-5c5c-aa02-455b2ed5378d",
+      "name": "Recordatorios",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        660,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:3014/api/recordatorio",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json) }}",
+        "options": {
+          "timeout": 20000
+        }
+      }
+    },
+    {
+      "id": "8b10acb8-e8b1-57e0-b29e-e20dfc763b9a",
+      "name": "Solo los nuevos",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        880,
+        0
+      ],
+      "parameters": {
+        "jsCode": "return $input.all().filter(i => i.json.nuevo).map(i => ({ json: {\n  title: 'Vencimiento agendado', message: i.json.texto, tag: 'credit_card', click: 'https://mac-server.tailnet-ejemplo.ts.net:3014/',\n} }));\n"
+      }
+    },
+    {
+      "id": "b4aedb2f-10b4-5d0e-a3c4-2785e59d9b46",
+      "name": "Avisar por ntfy",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1100,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:8091",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ topic: $env.NTFY_TOPIC, title: $json.title, message: $json.message, tags: [$json.tag || 'robot'], click: $json.click, priority: $json.priority || 3 }) }}",
+        "options": {
+          "timeout": 20000
+        }
+      }
+    }
+  ],
+  "connections": {
+    "9:30 y 19:30": {
+      "main": [
+        [
+          {
+            "node": "Finanzas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Finanzas": {
+      "main": [
+        [
+          {
+            "node": "Un recordatorio por vencimiento",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Un recordatorio por vencimiento": {
+      "main": [
+        [
+          {
+            "node": "Recordatorios",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recordatorios": {
+      "main": [
+        [
+          {
+            "node": "Solo los nuevos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Solo los nuevos": {
+      "main": [
+        [
+          {
+            "node": "Avisar por ntfy",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "America/Argentina/Cordoba",
+    "saveDataSuccessExecution": "all",
+    "saveDataErrorExecution": "all"
+  },
+  "pinData": {},
+  "meta": {
+    "note": "Card statements due today or later (Finanzas /api/estado) become reminders: at 10:00 on the day and the day before."
+  },
+  "tags": []
+}

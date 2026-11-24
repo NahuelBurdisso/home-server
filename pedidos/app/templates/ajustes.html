@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Ajustes</h1>
+<section class="card">
+  <form method="post" action="/ajustes" class="form">
+    <label>Dirección de entrega <input name="direccion" value="{{ meta.direccion }}" placeholder="Calle 123, barrio"></label>
+    <label>Nombre (firma el mensaje) <input name="nombre" value="{{ meta.nombre }}"></label>
+    <label>Aclaración <input name="aclaracion" value="{{ meta.aclaracion }}" placeholder="Timbre 2, pago en efectivo"></label>
+    <label>Referencia <input name="referencia" value="{{ meta.referencia }}" placeholder="Dúplex A, portón negro"></label>
+    <label>Teléfono <input name="telefono" value="{{ meta.telefono }}" inputmode="tel" placeholder="351 555 1234"></label>
+    <label>Forma de pago <input name="pago" value="{{ meta.pago }}" placeholder="Efectivo"></label>
+    <p class="note">Lo que quede vacío no va en el mensaje. Teléfono y forma de pago van solo a las tiendas de pedix, que reciben el mensaje como lo arma su página. La referencia va a todos: a los demás, entre paréntesis al lado de la dirección.</p>
+    <button class="button">Guardar</button>
+  </form>
+</section>
+{% endblock %}

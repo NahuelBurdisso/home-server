@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block content %}
+<header class="month-nav"><span></span><h1>Lo que te quedó</h1><span></span></header>
+
+<div class="toggle">
+  <a href="/evolucion?ver=ars" class="{{ 'on' if ver == 'ars' }}">Pesos</a>
+  <a href="/evolucion?ver=real" class="{{ 'on' if ver == 'real' }}">Pesos de hoy</a>
+  <a href="/evolucion?ver=usd" class="{{ 'on' if ver == 'usd' }}">Dólares MEP</a>
+</div>
+{% if ver == 'real' and cpi_month %}
+<p class="note" style="text-align:center">Cada mes ajustado por inflación (IPC del INDEC) a pesos de {{ month_name(cpi_month) }}:
+  así se comparan meses de verdad.</p>
+{% endif %}
+
+{% if not rows %}
+<section class="card empty"><p>Cuando cargues al menos un mes, acá aparece la evolución.</p>
+  <a class="button" href="/cargar">Cargar archivos</a></section>
+{% else %}
+<section class="card">
+  <svg class="chart" viewBox="0 0 {{ width }} {{ height + 24 }}" role="img"
+       aria-label="Lo que te quedó por mes">
+    <line x1="0" x2="{{ width }}" y1="{{ zero }}" y2="{{ zero }}" class="axis"/>
+    {% for r in rows %}
+    <a href="/mes?m={{ r.month }}">
+      <rect x="{{ r.x + 12 }}" y="{{ r.bar_y }}" width="36" height="{{ r.bar_h }}" rx="4"
+            class="{{ 'pos' if r.value >= 0 else 'neg' }}{{ ' partial' if r.missing }}"><title>{{ month_name(r.month) }}: {{ money(r.value) }}{{ ' (faltan datos)' if r.missing }}</title></rect>
+      <text x="{{ r.x + 30 }}" y="{{ height + 18 }}" text-anchor="middle">{{ month_short(r.month) }}</text>
+    </a>
+    {% endfor %}
+  </svg>
+  <p class="note">Promedio: <strong>{{ money(avg) }}</strong> por mes
+    {%- if avg_months %} ({{ 'solo ' if avg_months | length < rows | length }}{{ 'el mes completo' if avg_months | length == 1 else 'los meses completos' }}:
+    {{ avg_months | map('month_short') | join(', ') }}){% else %} (todavía no hay un mes completo: es con lo cargado){% endif %}.
+    Tocá una barra para ver ese mes.
+    {% if rows | selectattr('missing') | list %}Las barras claras son meses a los que les falta cargar alguna cuenta.{% endif %}</p>
+</section>
+
+<section class="card">
+  <table class="table">
+    <thead><tr><th>Mes</th><th>Entró</th><th>Salió</th><th>Quedó</th></tr></thead>
+    <tbody>
+    {% for r in rows | reverse %}
+    <tr>
+      <td><a href="/mes?m={{ r.month }}">{{ month_short(r.month) }}</a>{% if r.month == this_month %}<small>en curso</small>
+        {%- elif r.missing %}<small>incompleto</small>{% endif %}</td>
+      <td title="{{ money(r.income_v) }}">{{ short(r.income_v) }}</td>
+      <td title="{{ money(r.spent_v) }}">{{ short(r.spent_v) }}</td>
+      <td class="{{ 'pos' if r.left >= 0 else 'neg' }}{{ ' dim' if r.missing or r.month == this_month }}" title="{{ money(r.value) }}">{{ short(r.value) }}</td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endif %}
+{% endblock %}

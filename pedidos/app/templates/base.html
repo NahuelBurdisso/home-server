@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#4d7c0f">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Pedidos">
+  <title>Pedidos</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <link rel="apple-touch-icon" href="/static/icon.png">
+</head>
+<body>
+  <main>
+    {% if ok %}<p class="ok">{{ ok }}</p>{% endif %}
+    {% if error %}<p class="warn">{{ error }}</p>{% endif %}
+    {% block content %}{% endblock %}
+  </main>
+  <nav class="tabs" style="grid-template-columns: repeat(4, 1fr)">
+    <a href="/" class="{{ 'on' if page in ('inicio', 'pedido') }}"><span>🛵</span>Pedidos</a>
+    <a href="/historial" class="{{ 'on' if page == 'historial' }}"><span>↺</span>Historial</a>
+    <a href="/proveedores" class="{{ 'on' if page in ('proveedores', 'ajustes') }}"><span>⚙︎</span>Proveedores</a>
+    <a href="/ayuda" class="{{ 'on' if page == 'ayuda' }}"><span>?</span>iPhone</a>
+  </nav>
+</body>
+</html>

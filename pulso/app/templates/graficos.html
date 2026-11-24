@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="bar"><h1>❯ gráficos</h1>{% include "_ranges.html" %}</div>
+<section class="graphs">
+  {% for title, svg, note in sections %}
+  <div class="panel pad">
+    <h3>{{ title }}</h3>
+    {{ svg }}
+    {% if note %}<small>{{ note }}</small>{% endif %}
+  </div>
+  {% endfor %}
+</section>
+{% endblock %}

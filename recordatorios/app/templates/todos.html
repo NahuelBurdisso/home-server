@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Todos</h1>
+<section class="card">
+  <h2>Activos</h2>
+  {% if active %}
+  <ul class="list">
+    {% for i in active %}
+    <li><a class="row" href="/r/{{ i.r.id }}">
+      <span>{{ i.r.title }}{% if i.repeat %}<small>↻ {{ i.repeat }}</small>{% endif %}</span>
+      <strong>{{ i.when }}</strong>
+    </a></li>
+    {% endfor %}
+  </ul>
+  {% else %}<p class="muted">Todavía nada.</p>{% endif %}
+</section>
+{% if past %}
+<section class="card">
+  <h2>Ya pasaron</h2>
+  <ul class="list">
+    {% for i in past %}
+    <li class="past"><a class="row" href="/r/{{ i.r.id }}">
+      <span>{{ i.r.title }}</span><strong>{{ i.r.date[8:10] }}/{{ i.r.date[5:7] }}/{{ i.r.date[:4] }}</strong>
+    </a></li>
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}
+{% endblock %}

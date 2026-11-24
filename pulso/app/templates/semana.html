@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="bar"><h1>❯ semana <span class="dim">· los últimos 7 días contra los 7 anteriores</span></h1></div>
+<section class="panel">
+  <table class="week">
+    <thead><tr><th></th><th class="num">esta semana</th><th class="num">la anterior</th><th></th></tr></thead>
+    {% for r in rows %}
+    <tr><td>{{ r.label }}</td><td class="num">{{ r.now }}</td><td class="num dim">{{ r.before }}</td>
+      <td class="trend {{ r.trend }}">{{ {'mejor': '▲ mejor', 'peor': '▼ peor'}.get(r.trend, '') }}</td></tr>
+    {% endfor %}
+  </table>
+</section>
+<p class="foot">Días completos de Córdoba, hasta hoy incluido. "Mejor/peor" marca cambios de más del 5%.</p>
+{% endblock %}

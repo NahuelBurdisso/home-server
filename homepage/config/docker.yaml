@@ -1,0 +1,6 @@
+---
+# Container status and CPU/RAM per service, read through socket-proxy (read-only Docker API,
+# on the dockerapi network only).
+mac:
+  host: socket-proxy
+  port: 2375

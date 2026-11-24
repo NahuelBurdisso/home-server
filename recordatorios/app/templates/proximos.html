@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block content %}
+<form class="quick card" method="post" action="/rapido">
+  <label for="texto">¿Qué querés recordar?</label>
+  <div class="quick-row">
+    <input id="texto" name="texto" autocomplete="off" enterkeyhint="done" placeholder="mañana 18hs dentista" autofocus>
+    <button class="button">Agregar</button>
+  </div>
+  <p class="note">Ej.: <em>cumple de mamá 15/3</em> · <em>el jueves a las 9 llamar al banco</em> ·
+    <em>pagar la tarjeta el 10 todos los meses</em> · <em>en 20 minutos sacar la ropa</em></p>
+</form>
+
+{% if added %}
+<div class="added card">
+  <p><strong>✓ Agendado.</strong> {{ added_text }}</p>
+  <div class="added-actions">
+    <a href="/r/{{ added.id }}">Corregir</a>
+    <form method="post" action="/r/{{ added.id }}/borrar"><button class="link">Deshacer</button></form>
+  </div>
+</div>
+{% endif %}
+
+{% for name, items in groups %}
+<section class="card">
+  <h2>{{ name }}</h2>
+  <ul class="list">
+    {% for i in items %}
+    <li class="{{ 'past' if i.past }}">
+      <a class="row" href="/r/{{ i.r.id }}">
+        <span>{{ i.r.title }}
+          {% if i.years is not none %}<small>{{ i.years }} años</small>{% endif %}
+          {% if i.r.repeat != 'none' %}<small>↻ {{ REPEATS[i.r.repeat] }}</small>{% endif %}
+        </span>
+        <strong>{{ i.when }}</strong>
+      </a>
+    </li>
+    {% endfor %}
+  </ul>
+</section>
+{% else %}
+<div class="card empty">
+  <p><strong>Nada en los próximos {{ days }} días.</strong></p>
+  <p class="muted">Escribí arriba lo que quieras recordar, o dictáselo a Siri (ver pestaña iPhone).</p>
+</div>
+{% endfor %}
+<a class="more" href="/todos">Ver todos</a>
+{% endblock %}

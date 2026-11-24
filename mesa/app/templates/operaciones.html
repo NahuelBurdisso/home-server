@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% from "_macros.html" import orden_linea %}
+{% block title %}Operaciones · Mesa{% endblock %}
+{% block content %}
+<h1>Operaciones</h1>
+<div class="toggle">
+  <a href="/operaciones?cartera=claude" class="{{ 'on' if clave == 'claude' }}">Claude</a>
+  <a href="/operaciones?cartera=vara" class="{{ 'on' if clave == 'vara' }}">La vara (SPY)</a>
+</div>
+
+<section class="card">
+  <h2>Costos y movimiento</h2>
+  <dl class="kv">
+    <dt>Comisiones</dt><dd>{{ num(m.comisiones) }} USD</dd>
+    <dt>Deslizamiento</dt><dd>{{ num(m.deslizamiento) }} USD</dd>
+    <dt>Costos pagados</dt><dd><b>{{ num(m.costos) }} USD</b></dd>
+    <dt>Dividendos netos</dt><dd>{{ num(m.dividendos_netos) }} USD</dd>
+    <dt>Compras / ventas</dt><dd>{{ num(m.compras_usd) }} / {{ num(m.ventas_usd) }} USD</dd>
+    <dt>Rotación anualizada</dt><dd>{% if m.rotacion_anualizada is not none %}{{ num(m.rotacion_anualizada, 2) }} veces{% else %}desde los 30 días{% endif %}</dd>
+    <dt>Posiciones cerradas</dt><dd>{{ m.cerradas }}{% if m.cerradas %} ({{ m.ganadoras }} ganaron){% endif %}</dd>
+  </dl>
+</section>
+
+<section class="card">
+  <h2>Ejecuciones</h2>
+  {% if ordenes %}<ul class="list">{% for o in ordenes %}{{ orden_linea(o) }}{% endfor %}</ul>
+  {% else %}<p class="note">Ninguna todavía.</p>{% endif %}
+</section>
+
+<section class="card">
+  <h2>Dividendos y splits</h2>
+  {% if eventos %}
+  <ul class="list">
+    {% for ev in eventos %}
+    <li><div class="row"><span><b>{{ ev.ticker }}</b> {{ dia(ev.fecha) }}</span>
+      <span>{% if ev.tipo == 'dividendo' %}{{ num(ev.neto_usd) }} USD netos{% else %}split × {{ num(ev.valor, 4) }}{% endif %}</span></div></li>
+    {% endfor %}
+  </ul>
+  {% else %}<p class="note">Ninguno todavía.</p>{% endif %}
+</section>
+{% endblock %}

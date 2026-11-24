@@ -1,0 +1,24 @@
+---
+# Outside the Mac: the admin pages you need now and then.
+- Admin:
+    - Tailscale:
+        - abbr: TS
+          href: https://login.tailscale.com/admin/machines
+          description: Dispositivos, ACL (setup/tailscale-policy.hujson)
+    - healthchecks.io:
+        - abbr: HC
+          href: https://healthchecks.io/projects/
+          description: Avisa si el Mac deja de latir
+    - Router:
+        - abbr: RT
+          href: http://192.168.1.1
+          description: Nokia de la casa
+- Atajos:
+    - Logs:
+        - abbr: LG
+          href: https://mac-server.tailnet-ejemplo.ts.net:8080
+          description: Dozzle, logs de cada contenedor
+    - Historia:
+        - abbr: PU
+          href: https://mac-server.tailnet-ejemplo.ts.net:3015/eventos
+          description: Pulso, todo lo que pasó

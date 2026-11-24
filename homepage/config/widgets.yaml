@@ -1,0 +1,30 @@
+---
+- greeting:
+    text_size: xl
+    text: mac-server
+# Live CPU, RAM and disk from Glances on the Mac (localhost only, reached through Docker's host gateway).
+- glances:
+    url: http://host.docker.internal:61208
+    version: 4
+    cpu: true
+    mem: true
+    uptime: true
+    disk: /System/Volumes/Data
+# Weather for Córdoba (open-meteo: no key, nothing about you is sent but the coordinates).
+- openmeteo:
+    label: Córdoba
+    latitude: -31.42
+    longitude: -64.18
+    timezone: America/Argentina/Cordoba
+    units: metric
+    cache: 15
+- datetime:
+    text_size: sm
+    format:
+      hourCycle: h23
+      timeZone: America/Argentina/Cordoba
+      hour: 2-digit
+      minute: 2-digit
+      weekday: short
+      day: 2-digit
+      month: short

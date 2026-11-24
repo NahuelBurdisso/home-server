@@ -1,0 +1,26 @@
+# Pedidos: the house orders its food delivered. Turns Lista's pending things into one draft per shop
+# (pedix catalogs with real prices, WhatsApp shops), each one tap away from being sent. See DISENO.md.
+# Built here, not pulled. Tailnet only, through tailscale serve: https://mac-server.tailnet-ejemplo.ts.net:3022
+# No Caddy name on purpose, like Lista and Vigía: Caddy answers the whole LAN.
+services:
+  pedidos:
+    build: .
+    image: pedidos:local
+    container_name: pedidos
+    ports:
+      - "127.0.0.1:3022:8000"  # this Mac only: others reach it through tailscale serve
+    environment:
+      TZ: America/Argentina/Cordoba
+      # Who may open it (Tailscale login, as in the admin console). Others get a 403.
+      PEDIDOS_ALLOWED_LOGINS: NahuelBurdisso@github
+      PEDIDOS_URL: https://mac-server.tailnet-ejemplo.ts.net:3022
+      # Where the things to order come from (pending items, reading a sentence, ticking what was
+      # ordered): Lista on this Mac, direct (no proxy headers, so it lets us in).
+      LISTA_URL: http://host.docker.internal:3016
+    extra_hosts:
+      - "host.docker.internal:host-gateway"  # Lista runs on the Mac's port
+    volumes:
+      - ./data:/data
+    labels:
+      diun.enable: "false"  # local image, nothing to watch
+    restart: unless-stopped

@@ -1,0 +1,13 @@
+{% macro orden_linea(o) -%}
+<li>
+  <div class="row"><span><b>{{ LADOS[o.lado] }} {{ o.ticker }}</b>{% if o.automatica %} <span class="chip vara">la vara</span>{% endif %}</span>
+    <span>{% if o.estado == 'ejecutada' %}{{ num(o.cantidad_ejecutada * o.precio) }} USD{% elif o.monto_usd is not none %}{{ num(o.monto_usd) }} USD{% elif o.todo %}todo{% else %}{{ cant(o.cantidad) }} acc.{% endif %}</span></div>
+  <p class="sub">{% if o.estado == 'ejecutada' %}{{ cant(o.cantidad_ejecutada) }} a {{ num(o.precio) }} USD · {{ dia(o.fecha_rueda) }} · comisión {{ num(o.comision) }} · deslizamiento {{ num(o.deslizamiento_usd) }}
+    {%- elif o.estado == 'pendiente' %}pendiente desde {{ hora(o.creada_ts) }}: se ejecuta en la próxima apertura
+    {%- else %}<span class="neg">{{ o.estado }}</span>: {{ o.motivo_rechazo }}{% endif %}</p>
+</li>
+{%- endmacro %}
+
+{% macro boton(ruta, texto, volver, clase="button") -%}
+<form method="post" action="/accion/{{ ruta }}"><input type="hidden" name="volver" value="{{ volver }}"><button class="{{ clase }}">{{ texto }}</button></form>
+{%- endmacro %}

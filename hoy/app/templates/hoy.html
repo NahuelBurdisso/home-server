@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0369a1">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Hoy">
+  <title>Hoy</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <link rel="apple-touch-icon" href="/static/icon.png">
+</head>
+<body>
+<main>
+  <h1 class="date">{{ title }}{% if holiday and holiday.days == 0 %}<small>🇦🇷 feriado</small>{% endif %}</h1>
+
+  {% if msg %}<p class="{{ 'ok-msg added card' if ok else 'warn' }}">{{ msg }}</p>{% endif %}
+
+  {% if weather %}
+  <section class="card">
+    <div class="wx">
+      <span class="big">{{ weather.emoji }}</span>
+      <div>
+        <span class="temp">{{ weather.temp }}°</span> <span class="muted">sensación {{ weather.feels }}°</span>
+        <p>{{ weather.words | capitalize }}{% if weather.min is not none %} · {{ weather.min }}° a {{ weather.max }}°{% endif %}{% if weather.rain %} · lluvia {{ weather.rain }}%{% endif %}</p>
+        <small>☀︎ {{ weather.sunrise }} · ☾ {{ weather.sunset }}</small>
+      </div>
+    </div>
+    <div class="hours">
+      {% for h in weather.hours %}<div>{{ h.h }}h<b>{{ h.emoji }}</b>{{ h.temp }}°{% if h.rain >= 20 %}<span class="rain"><br>{{ h.rain }}%</span>{% endif %}</div>{% endfor %}
+    </div>
+    {% for w in weather.warn %}<p class="alert">⚠️ {{ w | capitalize }}.</p>{% endfor %}
+  </section>
+  {% endif %}
+
+  <section class="card">
+    <h2><a href="{{ LINKS.agenda }}">Agenda</a></h2>
+    {% if today %}<ul class="items">{% for r in today %}<li>{% if r.hora %}<strong>{{ r.hora }}</strong> {% endif %}{{ r.titulo }}</li>{% endfor %}</ul>
+    {% elif agenda_ok %}<p class="muted">Nada para hoy.</p>{% else %}<p class="muted">Recordatorios no respondió.</p>{% endif %}
+    {% if tomorrow %}<p class="muted" style="margin:8px 0 0">Mañana: {% for r in tomorrow %}{{ r.hora ~ ' ' if r.hora }}{{ r.titulo }}{{ ' · ' if not loop.last }}{% endfor %}</p>{% endif %}
+    {% if holiday and holiday.days > 0 %}<p class="muted" style="margin:8px 0 0">🇦🇷 {{ DAYS[holiday.date.weekday()] | capitalize }} {{ holiday.date.day }}/{{ holiday.date.month }}: {{ holiday.name }}{{ ' (finde largo)' if holiday.long }}</p>{% endif %}
+    <form class="tiny-form" method="post" action="/recordar"><input name="texto" placeholder="mañana 18hs dentista" autocomplete="off" enterkeyhint="done" aria-label="Recordar"><button class="button">Recordar</button></form>
+  </section>
+
+  <section class="card">
+    <h2><a href="{{ LINKS.lista }}">Lista{% if lista and lista.cantidad %} · {{ lista.cantidad }}{% endif %}</a></h2>
+    {% if lista and lista.cantidad %}<p>{% for sec, items in lista.por_seccion.items() %}{{ items | join(', ') }}{{ ', ' if not loop.last }}{% endfor %}</p>
+    {% elif lista %}<p class="muted">No falta nada.</p>{% else %}<p class="muted">Lista no respondió.</p>{% endif %}
+    <form class="tiny-form" method="post" action="/lista"><input name="texto" placeholder="leche, pan y yerba" autocomplete="off" enterkeyhint="done" aria-label="Agregar a la lista"><button class="button">Agregar</button></form>
+  </section>
+
+  <div class="row2">
+    <section class="card">
+      <h2><a href="{{ LINKS.plata }}">Plata</a></h2>
+      {% if plata %}
+      <div class="kv">
+        {% if plata.mep %}<p><span class="big2">$ {{ "{:,}".format(plata.mep).replace(",", ".") }}</span><small>dólar MEP</small></p>{% endif %}
+        {% for v in dues %}<p>💳 {{ v.cuenta }} vence {{ v.vence | dmy }}{% if v.total %}: {{ v.total }}{% endif %}</p>{% endfor %}
+        {% if pagos and not pagos.al_dia %}<p><a href="{{ LINKS.plata }}/pagos">🧾 Falta pagar: {{ pagos.texto }}</a></p>
+        {% elif pagos %}<p class="muted"><a href="{{ LINKS.plata }}/pagos">Pagos del mes al día</a></p>{% endif %}
+        {% if plata.para_revisar %}<p class="muted">{{ plata.para_revisar }} gastos para revisar</p>{% endif %}
+      </div>
+      {% else %}<p class="muted">Finanzas no respondió.</p>{% endif %}
+    </section>
+    <section class="card">
+      <h2><a href="{{ LINKS.server }}">Server</a></h2>
+      {% if server %}
+      <p><span class="light {{ server.luz }}"></span>{{ {'verde': 'Todo bien', 'amarillo': 'Para mirar', 'rojo': 'Algo anda mal'}[server.luz] }}</p>
+      {% for a in (server.avisos or [])[:3] %}<p class="muted" style="margin:2px 0">{{ a }}</p>{% endfor %}
+      {% if server.internet_24h is not none %}<small>Internet {{ server.internet_24h }}% en 24 h</small>{% endif %}
+      {% else %}<p class="muted">Pulso no respondió.</p>{% endif %}
+    </section>
+  </div>
+  <div class="gap"></div>
+
+  {% if mesa %}
+  <section class="card">
+    <h2><a href="{{ LINKS.mesa }}">Mesa</a></h2>
+    {% if mesa.empezo %}
+    <p><span class="big2">{{ mesa.ret }}</span><small>Claude{% if mesa.desde %} desde el {{ mesa.desde }}{% endif %}</small></p>
+    <p class="muted" style="margin:2px 0">La vara (S&amp;P): {{ mesa.vara }} · {{ mesa.exceso }} {{ 'arriba' if mesa.exceso_up else 'abajo' }}</p>
+    <p class="muted" style="margin:2px 0">{% if mesa.posiciones %}{{ mesa.posiciones | join(' · ') }}{% else %}Sin posiciones{% endif %}{% if mesa.pendientes %} · {{ mesa.pendientes }} {{ 'orden pendiente' if mesa.pendientes == 1 else 'órdenes pendientes' }}{% endif %}</p>
+    {% else %}
+    <p class="muted" style="margin:2px 0">Todavía no empezó.</p>
+    {% endif %}
+    {% if mesa.pausada %}<p class="warn" style="margin:6px 0 0">La mesa está en pausa.</p>{% endif %}
+  </section>
+  <div class="gap"></div>
+  {% endif %}
+
+  {% if papeles %}
+  <section class="card">
+    <h2><a href="{{ LINKS.papeles }}">Papeles que vencen</a></h2>
+    <ul class="items">{% for p in papeles %}<li><a href="{{ p.link }}">{{ p.titulo }}</a> · {{ p.vence | dmy }}</li>{% endfor %}</ul>
+  </section>
+  {% endif %}
+
+  <p class="footnote"><a href="{{ LINKS.ia }}">Preguntale al Asistente</a> · se actualiza al abrir<br>
+    Con Siri: un atajo con <em>Obtener contenido de URL</em> <code>https://mac-server.tailnet-ejemplo.ts.net:3018/api/frase</code>
+    y <em>Leer texto</em>, llamado “Buen día”.</p>
+</main>
+</body>
+</html>

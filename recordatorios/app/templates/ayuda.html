@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>En el iPhone</h1>
+<p class="footnote">Todo funciona con Tailscale prendido en el iPhone.</p>
+
+<section class="card">
+  <h2>1 · Recibir los avisos (ntfy)</h2>
+  <p>En la app <strong>ntfy</strong> tocá <strong>+</strong>, activá <em>Use another server</em> y poné:</p>
+  <p class="copy">Tema: <code>{{ topic or '(falta el archivo del tema en el server)' }}</code></p>
+  <p class="copy">Servidor: <code>https://mac-server.tailnet-ejemplo.ts.net:8443</code></p>
+  <p class="note">Es un tema aparte de las alertas del server, así le podés poner otro sonido o silenciar uno sin el otro.</p>
+</section>
+
+<section class="card">
+  <h2>2 · Agregar con Siri (Atajo)</h2>
+  <p>App <strong>Atajos</strong> → <strong>+</strong> → nombre <em>Recordame</em>, con estas acciones:</p>
+  <ol class="steps">
+    <li><strong>Dictar texto</strong> (idioma: Español).</li>
+    <li><strong>Obtener contenido de URL</strong>:
+      <code>{{ PUBLIC_URL }}/api/rapido</code><br>
+      Método <em>POST</em>, Cuerpo <em>JSON</em>, campo <code>texto</code> = <em>Texto dictado</em>.</li>
+    <li><strong>Leer texto</strong> (o <em>Mostrar resultado</em>) con el <em>Contenido de URL</em>.</li>
+  </ol>
+  <p class="note">Después: “Oye Siri, Recordame” → “el viernes a las 10 turno con el médico”. Siri te confirma qué agendó.
+    También podés agregar el atajo a la pantalla de inicio o al botón de acción.</p>
+  <p>Para preguntar <em>“¿Qué tengo?”</em>: otro atajo con <strong>Obtener contenido de URL</strong>
+    <code>{{ PUBLIC_URL }}/api/proximos</code> (GET) y <strong>Leer texto</strong>.</p>
+</section>
+
+<section class="card">
+  <h2>3 · Verlos en Calendario</h2>
+  <p>Abrí esta página en <strong>Safari</strong> y tocá:</p>
+  <p><a class="button" href="{{ WEBCAL_URL }}">Suscribirme en Calendario</a></p>
+  <p class="note">Si no abre nada: Ajustes → Calendario → Cuentas → Añadir cuenta → Otra →
+    <strong>Añadir calendario suscrito</strong>, y pegá (sin :3014):</p>
+  <p class="copy"><code>{{ CALENDAR_URL }}</code></p>
+  <p class="note">Es de solo lectura: para agregar o cambiar, usá esta app o Siri. Los avisos llegan por ntfy, no por Calendario.</p>
+</section>
+
+<section class="card">
+  <h2>4 · Esta app como ícono</h2>
+  <p>En Safari, botón Compartir → <strong>Agregar a inicio</strong>.</p>
+</section>
+{% endblock %}

@@ -1,0 +1,32 @@
+# Phase 11: reminders for events and dates, on the iPhone through ntfy (+ a calendar feed).
+# Tailnet only, through tailscale serve: https://mac-server.tailnet-ejemplo.ts.net:3014
+# No Caddy name on purpose, like Finanzas: Caddy answers the whole LAN and this has no login of its own.
+# The ntfy topic is its own (secrets/ntfy-topic-recordatorios), apart from the server alerts.
+services:
+  recordatorios:
+    build: .
+    image: recordatorios:local
+    container_name: recordatorios
+    ports:
+      - "127.0.0.1:3014:8000"  # this Mac only: others reach it through tailscale serve
+    environment:
+      TZ: America/Argentina/Cordoba
+      # Who may open it (Tailscale login, as in the admin console). Others get a 403.
+      RECORDATORIOS_ALLOWED_LOGINS: NahuelBurdisso@github
+      # Where the phone opens it and calls the notification buttons back.
+      RECORDATORIOS_URL: https://mac-server.tailnet-ejemplo.ts.net:3014
+      # The calendar feed on 443 (setup/tailscale-serve.sh): iOS won't subscribe on :3014.
+      RECORDATORIOS_CALENDAR_URL: https://mac-server.tailnet-ejemplo.ts.net/recordatorios/calendario.ics
+      NTFY_URL: http://host.docker.internal:8091
+      # Sentences the rules can't place ("el finde largo de noviembre") go to the local AI. See app/ia.py.
+      RECORDATORIOS_IA: ollama
+      OLLAMA_URL: http://host.docker.internal:11434
+      OLLAMA_MODEL: qwen3:8b
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ./data:/data
+      - ../secrets/ntfy-topic-recordatorios:/run/secrets/ntfy-topic:ro
+    labels:
+      diun.enable: "false"  # local image, nothing to watch
+    restart: unless-stopped

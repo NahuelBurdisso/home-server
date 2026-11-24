@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>En el iPhone</h1>
+<section class="card">
+  <h2>1 · Como app</h2>
+  <p>En Safari, esta página → <strong>Compartir</strong> → <strong>Agregar a pantalla de inicio</strong>.</p>
+</section>
+<section class="card">
+  <h2>2 · “Oye Siri, agregá a la lista”</h2>
+  <p>App <strong>Atajos</strong> → <strong>+</strong> → nombre <em>Agregá a la lista</em>, con estas acciones:</p>
+  <ol class="steps">
+    <li><strong>Dictar texto</strong>.</li>
+    <li><strong>Obtener contenido de URL</strong>: <code>{{ PUBLIC_URL }}/api/agregar</code>, método <strong>POST</strong>,
+      cuerpo <strong>Archivo</strong> = el texto dictado.</li>
+    <li><strong>Leer texto</strong>: el contenido de la URL.</li>
+  </ol>
+  <p class="note">Después: “Oye Siri, agregá a la lista” → “leche, pan y dos kilos de papas”. Siri te dice qué anotó.</p>
+</section>
+<section class="card">
+  <h2>3 · “¿Qué falta comprar?”</h2>
+  <p>Otro atajo: <strong>Obtener contenido de URL</strong> <code>{{ PUBLIC_URL }}/api/lista</code> → <strong>Leer texto</strong>.</p>
+</section>
+<section class="card">
+  <h2>4 · Con el Asistente</h2>
+  <p>En Open WebUI, el <em>Asistente del server</em> también la ve: “¿qué falta?”, “agregá yerba”, “ya compré la leche”.</p>
+</section>
+{% endblock %}

@@ -1,0 +1,342 @@
+{
+  "id": "buenDiaMatutino1",
+  "name": "Buen día · aviso de las 7:30",
+  "description": null,
+  "active": true,
+  "nodes": [
+    {
+      "id": "0e4aa9ab-3dd1-5183-aac9-6ea00fb7c01a",
+      "name": "Todos los días 7:30",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "30 7 * * *"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "abfc6cdf-acb6-580e-b083-1d70fb93884e",
+      "name": "Probar",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        200
+      ],
+      "parameters": {}
+    },
+    {
+      "id": "d2d2a8f0-6e16-5ec3-9561-3357633b5919",
+      "name": "Clima",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        220,
+        0
+      ],
+      "parameters": {
+        "url": "https://api.open-meteo.com/v1/forecast?latitude=-31.42&longitude=-64.18&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max,weather_code&timezone=America%2FArgentina%2FCordoba&forecast_days=1",
+        "options": {
+          "timeout": 20000
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "3e14865e-cbe4-5392-be32-a2a31d7f5fa1",
+      "name": "Recordatorios",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        440,
+        0
+      ],
+      "parameters": {
+        "url": "http://host.docker.internal:3014/ia/proximos?dias=2",
+        "options": {
+          "timeout": 20000
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "0f1ec2ea-dff6-5133-8038-ce5e56d45cd0",
+      "name": "Finanzas",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        660,
+        0
+      ],
+      "parameters": {
+        "url": "http://host.docker.internal:3013/api/estado",
+        "options": {
+          "timeout": 20000
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "3fa2e1bc-0701-5946-abfa-fa5f0a3b7236",
+      "name": "Dólar",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        880,
+        0
+      ],
+      "parameters": {
+        "url": "https://dolarapi.com/v1/dolares/bolsa",
+        "options": {
+          "timeout": 20000
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "3dcbf338-6d25-56c1-9b37-c3de1c829c23",
+      "name": "Pulso",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1100,
+        0
+      ],
+      "parameters": {
+        "url": "http://host.docker.internal:3015/api/resumen",
+        "options": {
+          "timeout": 20000
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "23d3d2a4-b47f-560c-882f-8e6bde0b1e85",
+      "name": "Lista",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1320,
+        0
+      ],
+      "parameters": {
+        "url": "http://host.docker.internal:3016/ia/lista",
+        "options": {
+          "timeout": 20000
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "c80b9d47-8d5d-5f77-a0fc-4db6fd42f7e5",
+      "name": "Feriados",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1540,
+        0
+      ],
+      "parameters": {
+        "url": "=https://api.argentinadatos.com/v1/feriados/{{ $now.setZone('America/Argentina/Cordoba').year }}",
+        "options": {
+          "timeout": 20000
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "fecd434d-2ce2-5a59-84a6-5ec5c1cedf15",
+      "name": "Feriados del año que viene",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1760,
+        0
+      ],
+      "parameters": {
+        "url": "=https://api.argentinadatos.com/v1/feriados/{{ $now.setZone('America/Argentina/Cordoba').year + 1 }}",
+        "options": {
+          "timeout": 20000
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "6ae3f697-3a5e-5834-b473-43ef35964083",
+      "name": "Armar aviso",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1980,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// One short notice at 7:30: the weather, what's on today and tomorrow, a card or a monthly bill\n// due soon, the dollar and whether the server had a bad night. Quiet (priority 2): no sound.\n// The place for the weather is the LAT/LON of the \"Clima\" node (Córdoba).\nconst get = name => { try { const j = $(name).first().json; return j.error ? null : j; } catch { return null; } };\nconst clima = get('Clima'), rec = get('Recordatorios'), fin = get('Finanzas'), dolar = get('Dólar'), pulso = get('Pulso'), lista = get('Lista');\nconst holidaysOf = (node) => { try { return $(node).all().map(i => i.json).filter(f => f.fecha); } catch { return []; } };\nconst feriados = [...holidaysOf('Feriados'), ...holidaysOf('Feriados del año que viene')];  // 1 January from late December\nconst hoy = $now.setZone('America/Argentina/Cordoba');\nconst dias = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];\nconst dmy = d => d.slice(0, 10).split('-').reverse().slice(0, 2).join('/');\nconst lines = [];\n\n// WMO weather codes (open-meteo) in a few words.\nconst cielo = c => c === 0 ? 'despejado' : c <= 2 ? 'algo nublado' : c === 3 ? 'nublado' : c <= 48 ? 'niebla'\n  : c <= 57 ? 'llovizna' : c <= 67 ? 'lluvia' : c <= 77 ? 'nieve' : c <= 82 ? 'chaparrones' : c <= 86 ? 'nieve' : 'tormenta';\nif (clima?.daily) {\n  const d = clima.daily, lluvia = d.precipitation_probability_max?.[0];\n  lines.push(`🌤️ ${Math.round(d.temperature_2m_min[0])}° a ${Math.round(d.temperature_2m_max[0])}°, ${cielo(d.weather_code[0])}`\n    + (lluvia >= 30 ? `, ${lluvia}% de lluvia ☔` : '') + '.');\n}\n\nconst items = rec?.recordatorios || [];\nconst today = hoy.toISODate(), tomorrow = hoy.plus({ days: 1 }).toISODate();\nconst hoyItems = items.filter(i => i.fecha === today), mananaItems = items.filter(i => i.fecha === tomorrow);\nconst item = i => (i.hora ? `${i.hora} ` : '') + i.titulo + (i.cumple_anos ? ` (${i.cumple_anos})` : '');\nif (hoyItems.length) lines.push(`📅 Hoy: ${hoyItems.map(item).join(' · ')}`);\nif (mananaItems.length) lines.push(`🗓️ Mañana: ${mananaItems.map(item).join(' · ')}`);\nif (!hoyItems.length && !mananaItems.length && rec) lines.push('📅 Nada agendado para hoy ni mañana.');\n\nfor (const v of fin?.vencimientos || []) {\n  const falta = Math.round((new Date(v.vence + 'T12:00:00') - new Date(today + 'T12:00:00')) / 864e5);\n  if (falta <= 3) lines.push(`💳 ${v.cuenta} vence ${falta === 0 ? 'HOY' : falta === 1 ? 'mañana' : `el ${dmy(v.vence)}`}`\n    + (v.total ? `: ${[v.total, v.total_usd].filter(Boolean).join(' + ')}` : '') + '.');\n}\n// The month's bills (Finanzas → Pagos del mes) still unpaid: the ones due within 3 days, or already late.\n{\n  const falta = (fin?.pagos?.faltan || []).map(p => ({ ...p,\n    dias: Math.round((new Date(p.vence + 'T12:00:00') - new Date(today + 'T12:00:00')) / 864e5) })).filter(p => p.dias <= 3);\n  const cuando = p => p.dias < 0 ? `venció el ${dmy(p.vence)}` : p.dias === 0 ? 'vence HOY' : p.dias === 1 ? 'vence mañana' : `vence el ${dmy(p.vence)}`;\n  if (falta.length) lines.push(`🧾 Falta pagar: ${falta.map(p => `${p.corto} (${cuando(p)})`).join(', ')}.`);\n}\n// Holidays (argentinadatos.com): today's, or the next one within a week (a Monday or Friday: long weekend).\n{\n  const hoyF = feriados.find(f => f.fecha === today);\n  const prox = feriados.find(f => f.fecha > today && (new Date(f.fecha + 'T12:00:00') - new Date(today + 'T12:00:00')) / 864e5 <= 7);\n  if (hoyF) lines.push(`🇦🇷 Hoy es feriado: ${hoyF.nombre}.`);\n  else if (prox) {\n    const d = new Date(prox.fecha + 'T12:00:00'), wd = d.getDay();\n    lines.push(`🇦🇷 Feriado el ${dias[wd]} ${dmy(prox.fecha)}: ${prox.nombre}` + (wd === 1 || wd === 5 ? ' (finde largo).' : '.'));\n  }\n}\nif (lista?.cantidad) {\n  const cosas = Object.values(lista.por_seccion || {}).flat();\n  lines.push(`🛒 Lista: ${cosas.slice(0, 6).join(', ')}${cosas.length > 6 ? ` y ${cosas.length - 6} más` : ''}.`);\n}\nif (dolar?.venta) lines.push(`💵 MEP $ ${Math.round(dolar.venta).toLocaleString('es-AR')}.`);\n\nif (pulso) {\n  const noche = [];\n  const veces = n => n === 1 ? '1 vez' : `${n} veces`;\n  if (pulso.internet_cortes_24h) noche.push(`internet se cortó ${veces(pulso.internet_cortes_24h)} (${pulso.internet_min_caido_24h} min)`);\n  if (pulso.alertas_24h) noche.push(`${pulso.alertas_24h} alerta${pulso.alertas_24h > 1 ? 's' : ''}`);\n  const estado = pulso.luz === 'verde' ? '🟢 Server bien' : pulso.luz === 'amarillo' ? '🟡 Server: ' + pulso.avisos.join(', ') : '🔴 Server: ' + pulso.avisos.join(', ');\n  lines.push(estado + (noche.length ? ` · en 24 h: ${noche.join(', ')}` : '') + '.');\n} else lines.push('🔴 Pulso no respondió: mirá el server.');\n\nreturn [{ json: {\n  title: `Buen día, ${dias[hoy.weekday % 7]} ${hoy.day}`,\n  message: lines.join('\\n'),\n  click: 'https://mac-server.tailnet-ejemplo.ts.net:3015',\n} }];\n"
+      }
+    },
+    {
+      "id": "0bb09d09-6cbb-5451-ae37-e7de5f68b085",
+      "name": "Avisar por ntfy",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2200,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:8091",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ topic: $env.NTFY_TOPIC, title: $json.title, message: $json.message, tags: ['sunrise'], click: $json.click, priority: 2 }) }}",
+        "options": {
+          "timeout": 20000
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Todos los días 7:30": {
+      "main": [
+        [
+          {
+            "node": "Clima",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Clima": {
+      "main": [
+        [
+          {
+            "node": "Recordatorios",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recordatorios": {
+      "main": [
+        [
+          {
+            "node": "Finanzas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Finanzas": {
+      "main": [
+        [
+          {
+            "node": "Dólar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Dólar": {
+      "main": [
+        [
+          {
+            "node": "Pulso",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pulso": {
+      "main": [
+        [
+          {
+            "node": "Lista",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Armar aviso": {
+      "main": [
+        [
+          {
+            "node": "Avisar por ntfy",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Probar": {
+      "main": [
+        [
+          {
+            "node": "Clima",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lista": {
+      "main": [
+        [
+          {
+            "node": "Feriados",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Feriados": {
+      "main": [
+        [
+          {
+            "node": "Feriados del año que viene",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Feriados del año que viene": {
+      "main": [
+        [
+          {
+            "node": "Armar aviso",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "America/Argentina/Cordoba",
+    "saveDataSuccessExecution": "none",
+    "saveDataErrorExecution": "all"
+  },
+  "pinData": {},
+  "meta": {
+    "note": "Weather from open-meteo (no key), Recordatorios, Finanzas, dolarapi and Pulso; one quiet ntfy at 7:30."
+  },
+  "tags": []
+}

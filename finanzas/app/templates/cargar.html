@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+{% block content %}
+{% if form_error %}<p class="warn">{{ form_error }}</p>{% endif %}
+<header class="month-nav"><span></span><h1>Cargar</h1><span></span></header>
+
+{% if results %}
+<section class="card">
+  <h2>Resultado</h2>
+  <ul class="list results">
+    {% for r in results %}
+    <li class="{{ 'ok' if r.ok else 'bad' }}">
+      <span>{{ r.file }}
+      {% if r.ok and r.statement and not r.new %}<small>Resumen con cierre {{ r.statement[8:10] }}/{{ r.statement[5:7] }}: ya estaba cargado</small>
+      {% elif r.ok %}<small>{{ ACCOUNTS[r.account] }}{{ ' · resumen con cierre ' ~ r.statement[8:10] ~ '/' ~ r.statement[5:7] if r.statement }} · {{ r.new }} nuevos{{ ', ' ~ r.dup ~ ' ya estaban' if r.dup }}{{ ', reemplazó ' ~ r.replaced ~ ' cargados desde el Excel' if r.replaced }}{{ ', ' ~ r.internal ~ ' transferencias entre tus cuentas' if r.internal }}</small>
+      {% else %}<small>{{ r.error }}</small>{% endif %}</span>
+      {% if r.ok and r.months %}<a href="/mes?m={{ r.months[-1] }}">Ver</a>{% endif %}
+    </li>
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}
+
+<section class="card">
+  <h2>Resúmenes del banco</h2>
+  <p class="note">Podés subir varios a la vez y repetir archivos: lo que ya estaba no se duplica.</p>
+  <form method="post" action="/cargar" enctype="multipart/form-data" class="form">
+    <label class="drop">
+      <input type="file" name="files" multiple accept=".csv,.xls,.xlsx,.xlsm,.pdf,text/csv" required
+             onchange="this.nextElementSibling.textContent = [...this.files].map(f => f.name).join(', ') || 'Elegir archivos'">
+      <span>Elegir archivos</span>
+      <small>PDF del resumen de la tarjeta, Excel o CSV del home banking y de Mercado Pago</small>
+    </label>
+    <label>De qué cuenta
+      <select name="account">
+        <option value="">Detectar automáticamente</option>
+        {% for k, label in ACCOUNTS.items() if k != 'efectivo' %}<option value="{{ k }}">{{ label }}</option>{% endfor %}
+      </select>
+    </label>
+    <button class="button">Subir</button>
+  </form>
+  {% if mp.on %}
+  <p class="note">🔄 <strong>Mercado Pago se carga solo</strong>, cada mañana con lo del día anterior{% if mp.ok %}: última vez el
+    {{ mp.ok[8:10] }}/{{ mp.ok[5:7] }} a las {{ mp.ok[11:16] }}{% endif %}.{% if mp.error %} Último intento con error
+    ({{ mp.error }}); vuelve a probar solo.{% endif %} No hace falta subir su reporte.</p>
+  {% endif %}
+  {% if gmail.on %}
+  <p class="note">📬 <strong>El aviso del resumen de la tarjeta entra solo</strong> desde el Gmail (vencimiento y saldo), y
+    también el PDF si te lo mandás ahí{% if gmail.ok %}: revisado el {{ gmail.ok[8:10] }}/{{ gmail.ok[5:7] }} a las
+    {{ gmail.ok[11:16] }}{% endif %}.{% if gmail.error %} Último intento con error ({{ gmail.error }}); vuelve a probar
+    sola.{% endif %}</p>
+  {% endif %}
+  <a class="more" href="/atajo">📲 Cargar desde el iPhone con Compartir → Finanzas</a>
+  {% if last %}
+  <p class="footnote">Última carga:
+    {% for k, d in last.items() %}{{ ACCOUNTS.get(k, k) }} {{ d }}{{ ', ' if not loop.last }}{% endfor %}</p>
+  {% endif %}
+</section>
+
+<section class="card" id="fijos">
+  <h2>Todos los meses, en dólares</h2>
+  <p class="note">Lo que cobrás o pagás en dólares cada mes. Se pasa a pesos con el MEP de ese mes;
+    si un mes fue distinto, borralo de ese mes en Movimientos.</p>
+  {% if recurring %}
+  <ul class="list">
+    {% for r in recurring %}
+    <li><span>{{ r.description }}<small>{{ 'Ingreso' if r.kind == 'income' else 'Gasto' }} · desde {{ month_name(r.start_month) }}</small></span>
+      <strong class="{{ 'pos' if r.kind == 'income' }}">{{ usd(r.amount_usd / 100) }}</strong>
+      <form method="post" action="/fijos/{{ r.id }}/borrar" class="del"
+            onsubmit="return confirm('¿Borrar {{ r.description }} de todos los meses?')"><button aria-label="Borrar">✕</button></form>
+    </li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+  <form method="post" action="/fijos" class="form">
+    <div class="seg two">
+      <label><input type="radio" name="kind" value="income" checked><span>Ingreso</span></label>
+      <label><input type="radio" name="kind" value="expense"><span>Gasto</span></label>
+    </div>
+    <label>Monto en US$ <input name="amount" inputmode="decimal" placeholder="3.500" required></label>
+    <label>Descripción <input name="description" placeholder="Sueldo, alquiler…" required></label>
+    <label>Desde <input type="month" name="start" value="{{ this_month }}" required></label>
+    <button class="button">Agregar</button>
+  </form>
+</section>
+
+<section class="card">
+  <h2>A mano</h2>
+  <p class="note">Para el sueldo si no entra al banco, gastos en efectivo o dólares que compraste afuera.</p>
+  <form method="post" action="/manual" class="form">
+    <div class="seg">
+      <label><input type="radio" name="kind" value="income" checked><span>Ingreso</span></label>
+      <label><input type="radio" name="kind" value="expense"><span>Gasto</span></label>
+      <label><input type="radio" name="kind" value="usd_buy"><span>Compra US$</span></label>
+    </div>
+    <label>Monto en pesos <input name="amount" inputmode="decimal" placeholder="150.000" required></label>
+    <label>Fecha <input type="date" name="when" value="{{ today }}" required></label>
+    <label>Descripción <input name="description" placeholder="Sueldo, alquiler, freelance…"></label>
+    <div class="seg">
+      {% for k, label in PEOPLE.items() %}
+      <label><input type="radio" name="quien" value="{{ k }}" {{ 'checked' if me == k }}><span>{{ label }}</span></label>
+      {% endfor %}
+    </div>
+    <button class="button">Guardar</button>
+  </form>
+</section>
+{% endblock %}

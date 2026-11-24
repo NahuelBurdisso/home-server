@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block content %}
+{% macro url(m=month, t=tipo, w=who) -%}
+/movimientos?m={{ m }}{{ '&tipo=' ~ t if t }}{{ '&quien=' ~ w if w }}
+{%- endmacro %}
+<header class="month-nav">
+  <a href="{{ url(m=prev) }}" aria-label="Mes anterior">‹</a>
+  <h1>{{ month_name(month) | capitalize }}</h1>
+  <a href="{{ url(m=next) }}" aria-label="Mes siguiente">›</a>
+</header>
+
+<div class="chips">
+  <a href="{{ url(t=None) }}" class="{{ 'on' if not tipo }}">Todos</a>
+  {% for k, label in KINDS.items() %}
+  <a href="{{ url(t=k) }}" class="{{ 'on' if tipo == k }}">{{ label }}</a>
+  {% endfor %}
+</div>
+
+<div class="chips" aria-label="De quién">
+  <a href="{{ url(w=None) }}" class="{{ 'on' if not who }}">De todos</a>
+  {% for k, label in PEOPLE.items() %}<a href="{{ url(w=k) }}" class="{{ 'on' if who == k }}">{{ label }}</a>{% endfor %}
+</div>
+
+{% if not rows %}
+<section class="card empty"><p>No hay movimientos{{ ' de este tipo' if tipo }}{{ ' de ' ~ PEOPLE[who] if who }} en este mes.</p></section>
+{% else %}
+<section class="card">
+  <p class="note">Tocá un movimiento para cambiar su tipo o categoría. Lo que elegís no se pisa al volver a cargar archivos.</p>
+  <ul class="list tx">
+    {% for t in rows %}
+    <li><a class="row" href="/movimientos/{{ t.id }}?back={{ url() | urlencode }}">
+      <span>{{ t.description }}
+        <small>{{ t.date[8:10] }}/{{ t.date[5:7] }} · {{ ACCOUNTS[t.account] }}{{ ' · ' ~ usd((t.amount_usd | abs) / 100) if t.amount_usd }} · {{ PEOPLE.get(t.who, '') }}</small>
+        <em class="kind k-{{ t.kind }}">{{ cat_label(t.category) if t.kind == 'expense' else KINDS[t.kind] }}{{ ' ✨' if t.category_source == 'ai' and t.kind == 'expense' }}</em></span>
+      <strong class="{{ 'pos' if t.amount > 0 else '' }}">{{ ars(t.amount, sign=True) }}</strong>
+    </a></li>
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}
+{% endblock %}

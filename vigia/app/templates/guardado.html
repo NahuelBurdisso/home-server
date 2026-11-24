@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Guardado</h1>
+{% if error %}<p class="warn">{{ error }}</p>{% endif %}
+{% if ok %}<p class="ok-box">{{ ok }}</p>{% endif %}
+
+<form class="card search" method="get" action="/guardado">
+  <input name="q" value="{{ q }}" type="search" placeholder="Buscar en lo guardado" enterkeyhint="search">
+  <button class="button">Buscar</button>
+</form>
+
+<section class="card">
+  {% if q %}<h2>{{ rows|length }} resultado{{ 's' if rows|length != 1 }} para «{{ q }}»</h2>{% endif %}
+  <ul class="results">
+    {% for r in rows %}
+    <li><a href="/g/{{ r.id }}">
+      <strong>{{ r.title or r.url or 'Sin título' }}</strong>
+      <p>{{ KIND_NAMES.get(r.kind, r.kind) }} · {{ r.created_at[:10] }}
+        {% if r.status != 'listo' %} · <span class="pill {{ 'bad' if r.status == 'error' else 'off' }}">{{ {'pendiente': 'leyendo…', 'sin_resumen': 'sin resumen', 'error': 'no se pudo'}[r.status] }}</span>{% endif %}</p>
+      {% if r.snippet %}<p>{{ marked(r.snippet) }}</p>{% endif %}
+    </a></li>
+    {% else %}
+    <li class="muted">{{ 'Nada con eso.' if q else 'Todavía no guardaste nada. Mandale un link al bot, o pegalo abajo.' }}</li>
+    {% endfor %}
+  </ul>
+</section>
+
+<form class="card form" method="post" action="/guardar">
+  <h2>Guardar</h2>
+  <label>Link<input name="url" type="url" inputmode="url" placeholder="https://… (una nota, un video de YouTube)"></label>
+  <details class="more-fields">
+    <summary>O un texto</summary>
+    <div class="form">
+      <label>Título<input name="titulo"></label>
+      <label>Texto<textarea name="texto" rows="5"></textarea></label>
+    </div>
+  </details>
+  <button class="button">Guardar</button>
+</form>
+{% endblock %}

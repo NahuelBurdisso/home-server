@@ -1,0 +1,19 @@
+# Self-hosted ntfy: phone alerts without a third-party account. Subscribe in the ntfy app
+# with server https://mac-server.tailnet-ejemplo.ts.net:8443 (Tailscale on).
+services:
+  ntfy:
+    image: binwiederhier/ntfy:v2
+    container_name: ntfy
+    command: serve
+    ports:
+      - "127.0.0.1:8091:80"  # this Mac only: others reach it through Caddy or tailscale serve
+    environment:
+      TZ: America/Argentina/Cordoba
+      NTFY_BASE_URL: https://mac-server.tailnet-ejemplo.ts.net:8443
+      NTFY_CACHE_FILE: /var/cache/ntfy/cache.db
+      NTFY_CACHE_DURATION: 72h
+      # iPhone only: ntfy.sh gets a wake-up ping (message ID, no content) so Apple can push it.
+      NTFY_UPSTREAM_BASE_URL: https://ntfy.sh
+    volumes:
+      - ./data:/var/cache/ntfy
+    restart: unless-stopped

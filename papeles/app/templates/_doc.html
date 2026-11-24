@@ -1,0 +1,8 @@
+<li><a href="/d/{{ d.id }}">
+  <span class="ico">{{ KINDS[d.kind][1] }}</span>
+  <span class="t">{{ d.title }}
+    <small>{{ KINDS[d.kind][0] }} · {{ d.doc_date | dmy }}</small>
+    {% if d.snip %}<span class="snip">{{ d.snip | replace('[', '«') | replace(']', '»') }}</span>{% endif %}
+  </span>
+  {% if d.expires %}<span class="badge">vence {{ d.expires | dmy }}</span>{% elif d.expires_found %}<span class="badge late">¿vence {{ d.expires_found | dmy }}?</span>{% endif %}
+</a></li>

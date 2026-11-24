@@ -1,0 +1,21 @@
+# The morning on one screen: weather, plans, the list, money, papers and the server, from the other
+# apps (it keeps nothing). Built here, not pulled.
+# Tailnet only, through tailscale serve: https://mac-server.tailnet-ejemplo.ts.net:3018
+services:
+  hoy:
+    build: .
+    image: hoy:local
+    container_name: hoy
+    ports:
+      - "127.0.0.1:3018:8000"  # this Mac only: others reach it through tailscale serve
+    environment:
+      TZ: America/Argentina/Cordoba
+      # Who may open it (Tailscale login, as in the admin console). Others get a 403.
+      HOY_ALLOWED_LOGINS: NahuelBurdisso@github
+      HOY_LAT: "-31.42"   # Córdoba, for the weather
+      HOY_LON: "-64.18"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    labels:
+      diun.enable: "false"  # local image, nothing to watch
+    restart: unless-stopped

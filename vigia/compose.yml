@@ -1,0 +1,32 @@
+# Vigía: the server watches the outside world. Pages checked on a schedule (a price, a change,
+# "turnos" appearing) and links, videos and long voice notes kept with a summary. See DISENO.md.
+# Built here, not pulled. Tailnet only, through tailscale serve: https://mac-server.tailnet-ejemplo.ts.net:3021
+# No Caddy name on purpose, like Lista and Finanzas: Caddy answers the whole LAN.
+services:
+  vigia:
+    build: .
+    image: vigia:local
+    container_name: vigia
+    ports:
+      - "127.0.0.1:3021:8000"  # this Mac only: others reach it through tailscale serve
+    environment:
+      TZ: America/Argentina/Cordoba
+      # Who may open it (Tailscale login, as in the admin console). Others get a 403.
+      VIGIA_ALLOWED_LOGINS: NahuelBurdisso@github
+      VIGIA_URL: https://mac-server.tailnet-ejemplo.ts.net:3021
+      # Summaries with the local model (app/ia.py); no tools, the page's text is only data.
+      OLLAMA_URL: http://host.docker.internal:11434
+      OLLAMA_MODEL: qwen3:8b
+      # Alerts and summaries go back to the Telegram chat that asked, through the bot (its API on this
+      # Mac, no auth: direct); without a chat, or if the bot doesn't take it, to ntfy.
+      MENSAJES_URL: http://host.docker.internal:3019
+      NTFY_URL: http://host.docker.internal:8091
+    extra_hosts:
+      - "host.docker.internal:host-gateway"  # Ollama, ntfy and Mensajes run on the Mac's ports
+    volumes:
+      - ./data:/data
+      # The house's topic (both phones), the one Recordatorios uses; secrets/ntfy-topic is the server's.
+      - ../secrets/ntfy-topic-recordatorios:/run/secrets/ntfy-topic:ro
+    labels:
+      diun.enable: "false"  # local image, nothing to watch
+    restart: unless-stopped

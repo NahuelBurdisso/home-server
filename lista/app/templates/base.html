@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#c2410c">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Lista">
+  <title>Lista</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <link rel="apple-touch-icon" href="/static/icon.png">
+</head>
+<body>
+  <main>{% block content %}{% endblock %}</main>
+  <nav class="tabs" style="grid-template-columns: repeat(3, 1fr)">
+    <a href="/" class="{{ 'on' if page == 'lista' }}"><span>☰</span>Lista</a>
+    <a href="/historial" class="{{ 'on' if page == 'historial' }}"><span>↺</span>Historial</a>
+    <a href="/ayuda" class="{{ 'on' if page == 'ayuda' }}"><span>?</span>iPhone</a>
+  </nav>
+</body>
+</html>

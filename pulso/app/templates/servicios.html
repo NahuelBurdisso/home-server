@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="bar"><h1>❯ servicios <span class="dim">· 90 días</span></h1></div>
+<section class="panel">
+  <table class="svc">
+    {% for s in services %}
+    <tr>
+      <td><a href="/servicios/{{ s.name | urlencode }}"><i class="dot {{ 'up' if s.up == 1 else 'down' if s.up == 0 else 'unk' }}"></i>{{ s.name }}</a></td>
+      <td class="num dim">{{ fmt(s.ms, 'ms') if s.ms is not none else '' }}</td>
+      <td class="wide">{{ s.strip }}</td>
+      <td class="num">{{ '%.2f%%' % (s.uptime * 100) if s.uptime is not none else '—' }}</td>
+      <td class="num dim">{{ minutes(s.down_min) if s.down_min else '' }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+</section>
+<p class="foot">Lo que mide Uptime Kuma, minuto a minuto. Cada cuadrito es un día: verde 100%, amarillo más de 98%, rojo menos.</p>
+{% endblock %}

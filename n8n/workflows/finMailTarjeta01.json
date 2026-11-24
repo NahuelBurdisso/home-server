@@ -1,0 +1,236 @@
+{
+  "id": "finMailTarjeta01",
+  "name": "Finanzas · resumen de la tarjeta por mail",
+  "description": null,
+  "active": true,
+  "nodes": [
+    {
+      "id": "aa69c213-89b5-502e-b9c4-86d3f18b057e",
+      "name": "Llega un mail",
+      "type": "n8n-nodes-base.emailReadImap",
+      "typeVersion": 2.2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "mailbox": "INBOX",
+        "postProcessAction": "nothing",
+        "downloadAttachments": true,
+        "format": "resolved",
+        "options": {
+          "customEmailConfig": "[\"ALL\"]"
+        }
+      },
+      "credentials": {
+        "imap": {
+          "id": "cLnKG5wIRL7MCP1x",
+          "name": "IMAP account"
+        }
+      }
+    },
+    {
+      "id": "3aa05f0d-b0fa-5b47-b4ae-86a0322501f6",
+      "name": "PDF de BBVA",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// Only BBVA mails with a PDF attached; everything else in the inbox is ignored.\nconst out = [];\nfor (const item of $input.all()) {\n  const de = JSON.stringify([item.json.from, item.json.subject]).toLowerCase();\n  if (!de.includes('bbva')) continue;\n  for (const bin of Object.values(item.binary || {})) {\n    if ((bin.fileName || '').toLowerCase().endsWith('.pdf') || bin.mimeType === 'application/pdf') {\n      out.push({ json: { asunto: item.json.subject }, binary: { pdf: bin } });\n    }\n  }\n}\nreturn out;\n"
+      }
+    },
+    {
+      "id": "19f14c25-5acb-5ded-8f53-0511b5fe465d",
+      "name": "Subir a Finanzas",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        440,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:3013/api/subir",
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "parameterType": "formBinaryData",
+              "name": "files",
+              "inputDataFieldName": "pdf"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 60000,
+          "response": {
+            "response": {
+              "responseFormat": "text",
+              "outputPropertyName": "data"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "cb6ecc8e-5d33-5861-b016-0129de2ba581",
+      "name": "Armar aviso",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        660,
+        0
+      ],
+      "parameters": {
+        "jsCode": "return $input.all().map(i => ({ json: {\n  title: 'Resumen de la tarjeta', message: i.json.data, tag: 'credit_card', click: 'https://mac-server.tailnet-ejemplo.ts.net:3013/mes',\n} }));\n"
+      }
+    },
+    {
+      "id": "b4aedb2f-10b4-5d0e-a3c4-2785e59d9b46",
+      "name": "Avisar por ntfy",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        880,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:8091",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ topic: $env.NTFY_TOPIC, title: $json.title, message: $json.message, tags: [$json.tag || 'robot'], click: $json.click, priority: $json.priority || 3 }) }}",
+        "options": {
+          "timeout": 20000
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// BBVA's \"ya podés descargar tu resumen\" mail has no PDF, but its text says when the card is due\n// and how much: Finanzas reads it (app/aviso.py). Hotmail forwards it here (a rule on avisos@bbva.com.ar).\nconst out = [];\nfor (const item of $input.all()) {\n  const de = JSON.stringify([item.json.from, item.json.subject]).toLowerCase();\n  if (!de.includes('bbva') || !de.includes('resumen')) continue;\n  const pdf = Object.values(item.binary || {}).some(b =>\n    (b.fileName || '').toLowerCase().endsWith('.pdf') || b.mimeType === 'application/pdf');\n  if (!pdf) out.push({ json: { texto: item.json.text || item.json.html || item.json.textAsHtml || '' } });\n}\nreturn out;\n"
+      },
+      "id": "3bb609ea-c486-4bfc-aadf-99d6f2ff9844",
+      "name": "Aviso de BBVA",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:3013/api/aviso-tarjeta",
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "text/plain",
+        "body": "={{ $json.texto }}",
+        "options": {
+          "timeout": 20000,
+          "response": {
+            "response": {
+              "neverError": true,
+              "responseFormat": "text",
+              "outputPropertyName": "data"
+            }
+          }
+        }
+      },
+      "id": "56707ce5-09cc-44ea-8494-d1b0ab0fe7be",
+      "name": "Avisar a Finanzas",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        440,
+        200
+      ]
+    }
+  ],
+  "connections": {
+    "Llega un mail": {
+      "main": [
+        [
+          {
+            "node": "PDF de BBVA",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Aviso de BBVA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PDF de BBVA": {
+      "main": [
+        [
+          {
+            "node": "Subir a Finanzas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Subir a Finanzas": {
+      "main": [
+        [
+          {
+            "node": "Armar aviso",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Armar aviso": {
+      "main": [
+        [
+          {
+            "node": "Avisar por ntfy",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aviso de BBVA": {
+      "main": [
+        [
+          {
+            "node": "Avisar a Finanzas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Avisar a Finanzas": {
+      "main": [
+        [
+          {
+            "node": "Armar aviso",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "America/Argentina/Cordoba",
+    "saveDataSuccessExecution": "none",
+    "saveDataErrorExecution": "all"
+  },
+  "pinData": {},
+  "meta": {},
+  "tags": []
+}

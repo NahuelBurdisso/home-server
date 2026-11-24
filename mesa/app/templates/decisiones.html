@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Decisiones · Mesa{% endblock %}
+{% block content %}
+<h1>Decisiones{% if ticker %} sobre {{ ticker }}{% endif %}</h1>
+{% if ticker %}<p class="footnote"><a href="/decisiones">Ver todas</a></p>{% endif %}
+<section class="card">
+  {% if decisiones %}
+  <ul class="list">
+    {% for d in decisiones %}
+    <li><a href="/decisiones/{{ d.id }}" style="color:inherit;text-decoration:none">
+      <div class="row"><span><b>{{ hora(d.ts) }}</b> <span class="chip">{{ d.sesion }}</span></span>
+        <span class="sub">{% if d.ordenes %}{{ d.ordenes|length }} órdenes{% else %}sin órdenes{% endif %}</span></div>
+      <p class="sub" style="margin:2px 0 0">{{ d.resumen[:220] }}{% if d.resumen|length > 220 %}…{% endif %}</p>
+      {% if d.ordenes %}<p class="sub" style="margin:2px 0 0">{% for o in d.ordenes %}{{ LADOS[o.lado] }} {{ o.ticker }} ({{ o.estado }}){{ ', ' if not loop.last }}{% endfor %}</p>{% endif %}
+    </a></li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="note">Todavía no hay decisiones.</p>
+  {% endif %}
+</section>
+{% endblock %}

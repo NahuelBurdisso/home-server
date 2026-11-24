@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% from "_macros.html" import orden_linea %}
+{% block title %}Decisión {{ d.id }} · Mesa{% endblock %}
+{% block content %}
+<div class="top"><a href="/decisiones" aria-label="Volver">‹</a><h1>Decisión {{ d.id }}</h1><span></span></div>
+<section class="card">
+  <h2>{{ hora(d.ts) }} <span class="right">{{ d.sesion }} · {{ d.quien }}</span></h2>
+  <p style="margin:0;overflow-wrap:anywhere">{{ d.resumen }}</p>
+</section>
+
+{% if d.regimen %}
+<section class="card">
+  <h2>Qué leyó del mercado</h2>
+  <dl class="kv">
+    {% if d.regimen.techo_exposicion_pct is defined and d.regimen.techo_exposicion_pct is not none %}<dt>Techo de exposición</dt><dd>{{ d.regimen.techo_exposicion_pct }} %</dd>{% endif %}
+    {% if d.regimen.accion %}<dt>Postura</dt><dd>{{ d.regimen.accion }}</dd>{% endif %}
+  </dl>
+  {% if d.regimen.notas %}<p class="note">{{ d.regimen.notas }}</p>{% endif %}
+  {% if d.skills_usadas %}<p class="note">Skills: {{ d.skills_usadas | join(', ') }}</p>{% endif %}
+</section>
+{% endif %}
+
+<section class="card">
+  <h2>Qué hizo</h2>
+  {% if d.ordenes or vara %}
+  <ul class="list">{% for o in d.ordenes %}{{ orden_linea(o) }}{% endfor %}{% for o in vara %}{{ orden_linea(o) }}{% endfor %}</ul>
+  {% else %}<p class="note">Nada: no hacer nada también es una decisión.</p>{% endif %}
+</section>
+
+{% if d.tesis %}
+<section class="card">
+  <h2>Por qué</h2>
+  <ul class="list">
+    {% for t in d.tesis %}
+    <li><div class="row"><span><b><a href="/posiciones/{{ t.ticker }}">{{ t.ticker }}</a></b> <span class="chip">{{ TIPOS_TESIS[t.tipo] }}</span></span>
+      <span class="sub">{% if t.horizonte_meses %}{{ t.horizonte_meses }} meses{% endif %}{% if t.revisar_el %} · revisar {{ dia(t.revisar_el) }}{% endif %}</span></div>
+      <p class="note" style="color:var(--ink)">{{ t.texto }}</p>
+      {% if t.invalida %}<p class="note"><b>La invalida:</b> {{ t.invalida }}</p>{% endif %}
+      {% if t.fuentes %}<p class="note">Fuentes: {% for f in t.fuentes %}{% if f.startswith('http') %}<a href="{{ f }}" rel="noopener noreferrer">{{ f[:60] }}</a>{% else %}{{ f }}{% endif %}{{ ' · ' if not loop.last }}{% endfor %}</p>{% endif %}
+    </li>
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}
+
+{% if d.lecciones %}
+<section class="card"><h2>Lecciones</h2><p class="note" style="color:var(--ink)">{{ d.lecciones }}</p></section>
+{% endif %}
+{% endblock %}

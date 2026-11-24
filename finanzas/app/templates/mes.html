@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+{% block content %}
+{% set q = '&quien=' ~ who if who else '' %}
+<header class="month-nav">
+  {% if has_prev %}<a href="/mes?m={{ prev }}{{ q }}" aria-label="Mes anterior">‹</a>{% else %}<span></span>{% endif %}
+  <h1>{{ month_name(s.month) | capitalize }}</h1>
+  {% if has_next %}<a href="/mes?m={{ next }}{{ q }}" aria-label="Mes siguiente">›</a>{% else %}<span></span>{% endif %}
+</header>
+
+{% if not empty %}
+<div class="chips" aria-label="De quién">
+  <a href="/mes?m={{ s.month }}" class="{{ 'on' if not who }}">De todos</a>
+  {% for k, label in PEOPLE.items() %}<a href="/mes?m={{ s.month }}&quien={{ k }}" class="{{ 'on' if who == k }}">{{ label }}</a>{% endfor %}
+</div>
+{% endif %}
+
+{% if empty %}
+<section class="card empty">
+  <h2>Todavía no hay datos</h2>
+  <p>Subí el resumen de BBVA o el reporte de Mercado Pago y acá vas a ver cuánto te quedó cada mes.</p>
+  <a class="button" href="/cargar">Cargar archivos</a>
+</section>
+{% else %}
+{# A month still going, or one without every account, isn't a result yet: it says so, and doesn't look
+   like one (no green). Its fixed dollar income is all there on the 1st; its spending is not. #}
+{% set partial = s.missing or current %}
+<section class="{{ ['card hero', 'neg' if s.left < 0, 'partial' if partial] | select | join(' ') }}">
+  <p class="label">{% if current %}{{ 'Hasta hoy te quedan' if s.left >= 0 else 'Hasta hoy gastaste de más' }}
+    {%- elif s.missing %}{{ 'Con lo cargado, te quedaron' if s.left >= 0 else 'Con lo cargado, gastaste de más' }}
+    {%- else %}{{ 'Te quedaron' if s.left >= 0 else 'Gastaste de más' }}{% endif %}{{ ' · ' ~ PEOPLE[who] if who }}</p>
+  <p class="big">{{ ars(s.left | abs) }}</p>
+  {% if mep %}<p class="sub">≈ {{ usd((s.left | abs) / 100 / mep) }} <span class="muted">· MEP {{ ars(mep * 100) }}</span></p>{% endif %}
+  {% if s.missing %}<a class="missing" href="/cargar">Faltan los gastos de {{ s.missing | join(' y ') }}: el número va a bajar.
+    <strong>Cargar</strong></a>
+  {% elif current %}<p class="missing">El mes sigue: faltan los gastos de acá a fin de mes.</p>{% endif %}
+</section>
+
+{% if have is not none and not who %}
+<a class="card have" href="/saldos">
+  {% if have.accounts %}
+  <span><span class="label">Tu plata hoy</span><small>{% for it in have.accounts %}{{ it.label }} {{ usd(it.usd / 100) if it.usd is defined else ars(it.now) }}{{ ' · ' if not loop.last }}{% endfor %}</small></span>
+  <strong>{{ ars(have.total) }}</strong>
+  {% else %}
+  <span><span class="label">¿Cuánto tenés hoy?</span><small>Contalo una vez y cada cuenta sigue sola.</small></span>
+  <strong>›</strong>
+  {% endif %}
+</a>
+{% endif %}
+
+{% if bills and not who %}
+<a class="card have" href="/pagos">
+  <span><span class="label">Pagos del mes</span><small>{{ bills.frase }}</small></span>
+  <strong class="{{ 'pos' if bills.pagados == bills.total else ('neg' if bills.faltan | selectattr('atrasado') | list else '') }}">{{ bills.pagados }}/{{ bills.total }}</strong>
+</a>
+{% endif %}
+
+<section class="card">
+  <div class="bar-row">
+    <span>Ingresos</span><strong class="pos">{{ ars(s.income) }}</strong>
+  </div>
+  <div class="bar"><i class="pos" style="width: {{ (s.income / top * 100) | round(1) }}%"></i></div>
+  <div class="bar-row">
+    <span>Gastos</span><strong class="neg">{{ ars(s.spent) }}</strong>
+  </div>
+  <div class="bar"><i class="neg" style="width: {{ (s.spent / top * 100) | round(1) }}%"></i></div>
+  {% if s.usd_sold %}
+  <p class="note">Vendiste dólares por {{ ars(s.usd_sold) }}: es plata tuya cambiando de moneda, no un ingreso.</p>
+  {% endif %}
+  {% if s.usd_bought %}
+  <p class="note">Pasaste {{ ars(s.usd_bought) }} a dólares: cuenta como ahorro, no como gasto.</p>
+  {% endif %}
+</section>
+
+{% if not who and s.by_person | length > 1 %}
+<section class="card">
+  <h2>Quién gastó</h2>
+  <ul class="list">
+    {% for p in s.by_person %}
+    <li><a class="row" href="/mes?m={{ s.month }}&quien={{ p.who }}"><span>{{ p.label }}<small>{{ ((p.spent / s.spent * 100) if s.spent else 0) | round | int }}% de los gastos</small></span>
+        <strong>{{ ars(p.spent) }}</strong></a></li>
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}
+
+{% if groups %}
+<section class="card">
+  <h2>En qué gastaste</h2>
+  <ul class="ranks compact">
+    {% for it in groups %}
+    <li><a href="/gastos?m={{ s.month }}&g={{ it.id }}{{ q }}">
+      <span class="name"><span class="emoji" aria-hidden="true">{{ it.emoji }}</span>{{ it.label }}</span>
+      <span class="amount">{{ ars(it.value) }}</span>
+      <span class="meter" title="{{ it.label }}: {{ ars(it.value) }} ({{ it.share }}%)"><i style="width: {{ it.width }}%"></i></span>
+      <span class="meta">{{ it.share }}%{% if it.delta is not none and (it.delta | abs) >= 10 %} · <span class="delta {{ 'up' if it.delta > 0 else 'down' }}">{{ '▲' if it.delta > 0 else '▼' }} {{ it.delta | abs }}%</span> vs. tu promedio{% endif %}</span>
+    </a></li>
+    {% endfor %}
+  </ul>
+  <a class="more" href="/gastos?m={{ s.month }}{{ q }}">{{ 'Ver todas las categorías' if more_groups else 'Ver el detalle' }}</a>
+  {% if to_review %}<a class="more subtle" href="/revisar?m={{ s.month }}">{{ to_review }} para revisar</a>{% endif %}
+</section>
+{% endif %}
+
+{% if s.biggest %}
+<section class="card">
+  <h2>Gastos más grandes</h2>
+  <ul class="list">
+    {% for t in s.biggest %}
+    <li><a class="row" href="/movimientos/{{ t.id }}?back=/mes%3Fm%3D{{ s.month }}"><span>{{ t.description }}<small>{{ t.date[8:10] }}/{{ t.date[5:7] }} · {{ ACCOUNTS[t.account] }}{{ ' · ' ~ usd((t.amount_usd | abs) / 100) if t.amount_usd }} · {{ cat_label(t.category) }}</small></span>
+        <strong>{{ ars(-t.amount) }}</strong></a></li>
+    {% endfor %}
+  </ul>
+  <a class="more" href="/movimientos?m={{ s.month }}&tipo=expense{{ q }}">Ver todos los gastos</a>
+</section>
+{% endif %}
+
+{% if s.excluded %}
+<p class="footnote"><a href="/movimientos?m={{ s.month }}&tipo=internal">{{ s.excluded }} movimientos</a>
+  entre tus cuentas o pagos de tarjeta no se cuentan, para no sumar dos veces lo mismo.</p>
+{% endif %}
+{% endif %}
+{% endblock %}

@@ -1,0 +1,16 @@
+# Short names (http://fotos.lan, http://pelis.lan, ...) for every service, on port 80.
+services:
+  caddy:
+    image: caddy:2
+    container_name: caddy
+    ports:
+      - "80:80"
+      - "127.0.0.1:11435:11435"  # Ollama for tailscale serve (see Caddyfile)
+      - "127.0.0.1:8092:8092"    # the iPhone widget's file for tailscale serve (see Caddyfile)
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./data:/data
+      - ../n8n/feed:/srv/feed:ro  # the folder, not the file: widget.json is replaced on every update
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped

@@ -1,0 +1,42 @@
+# Phase 10: personal finance tracker (BBVA, Mercado Pago, cash). Built here, not pulled.
+# Tailnet only, through tailscale serve: https://mac-server.tailnet-ejemplo.ts.net:3013
+# No Caddy name on purpose: Caddy answers the whole LAN and this has no login of its own.
+services:
+  finanzas:
+    build: .
+    image: finanzas:local
+    container_name: finanzas
+    ports:
+      - "127.0.0.1:3013:8000"  # this Mac only: others reach it through tailscale serve
+    environment:
+      TZ: America/Argentina/Cordoba
+      # Who may open it (Tailscale login, as in the admin console). Others get a 403.
+      FINANZAS_ALLOWED_LOGINS: NahuelBurdisso@github
+      # Whose is what someone writes down (login=nahuel|sofia); bank, card and Mercado Pago movements
+      # are FINANZAS_TITULAR's (nahuel by default). Each one can be changed on its page. See app/people.py.
+      # setup/acceso-sofia.sh adds Sofía to both lines.
+      FINANZAS_PERSONAS: NahuelBurdisso@github=nahuel
+      # Who suggests categories for unknown merchants: ollama (local), jev (TypeSafe, once
+      # connected) or none. See app/classifier.py.
+      FINANZAS_CLASSIFIER: ollama
+      OLLAMA_MODEL: qwen3:8b
+      # Phone notifications through the local ntfy (monthly summary and reminders). See app/notify.py.
+      FINANZAS_NOTIFY: "1"
+      FINANZAS_URL: https://mac-server.tailnet-ejemplo.ts.net:3013
+      # Pagos del mes: one reminder per unpaid bill in Recordatorios for the current month (its "Hecho"
+      # marks the bill paid), checked every 10 minutes and after each change. See app/pagos.py.
+      FINANZAS_PAGOS_AVISOS: "1"
+      RECORDATORIOS_URL: http://host.docker.internal:3014  # Recordatorios' API on this Mac (no auth: direct)
+    extra_hosts:
+      - "host.docker.internal:host-gateway"  # Ollama runs natively on the Mac
+    volumes:
+      - ./data:/data
+      - ../secrets/ntfy-topic:/run/secrets/ntfy-topic:ro
+      # Production Access Token of your Mercado Pago app: movements arrive by themselves (app/mpsync.py).
+      - ../secrets/mercadopago-token:/run/secrets/mercadopago-token:ro
+      # Gmail address and app password, one per line: BBVA's statement notice and the card PDF arrive
+      # by themselves (app/correo.py). Read on every round, so filling it in needs no restart.
+      - ../secrets/gmail-imap:/run/secrets/gmail-imap:ro
+    labels:
+      diun.enable: "false"  # local image, nothing to watch
+    restart: unless-stopped

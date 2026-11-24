@@ -1,0 +1,145 @@
+{
+  "id": "climaAlertasCba",
+  "name": "Clima · alertas de tormenta y granizo",
+  "description": null,
+  "active": true,
+  "nodes": [
+    {
+      "id": "2d2d6a3f-ec80-5a77-86b3-4c15911bd26c",
+      "name": "Cada 2 horas",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "5 */2 * * *"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "97d97de9-0b2d-5da5-ac28-649ae681051f",
+      "name": "Probar",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        200
+      ],
+      "parameters": {}
+    },
+    {
+      "id": "0fa66261-8d36-5aea-afe4-9019b02542b8",
+      "name": "Pronóstico por hora",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        220,
+        0
+      ],
+      "parameters": {
+        "url": "https://api.open-meteo.com/v1/forecast?latitude=-31.42&longitude=-64.18&hourly=weather_code,precipitation_probability,precipitation,wind_gusts_10m,temperature_2m&forecast_hours=12&timezone=America%2FArgentina%2FCordoba",
+        "options": {
+          "timeout": 20000
+        }
+      }
+    },
+    {
+      "id": "deac23fd-5b6e-502c-8d54-46c4638a7e86",
+      "name": "Buscar mal tiempo",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        440,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// Bad weather in Córdoba in the next 12 hours, from open-meteo's hourly forecast: a thunderstorm\n// (with hail when its code says so), strong wind, heavy rain, extreme heat or frost. One notice per\n// kind and day; a storm that turns into hail warns again. Quiet hours don't apply: hail doesn't wait.\nconst h = $input.first().json.hourly;\nif (!h?.time) return [];\nconst at = (i) => Number(h.time[i].slice(11, 13));\nconst day = (i) => h.time[i].slice(0, 10);\nconst found = {};   // kind -> {from, to, peak, day}\nconst mark = (kind, i, value) => {\n  const f = found[kind] || (found[kind] = { from: i, to: i, peak: value, day: day(i) });\n  f.to = i; f.peak = Math.max(f.peak, value);\n};\nconst num = (v) => (typeof v === 'number' ? v : null);  // a gap in the forecast is no reading (null <= 0 is true in JS)\nfor (let i = 0; i < h.time.length; i++) {\n  const code = num(h.weather_code[i]), prob = num(h.precipitation_probability?.[i]) ?? 50;\n  const gust = num(h.wind_gusts_10m[i]), rain = num(h.precipitation[i]), temp = num(h.temperature_2m[i]);\n  if ((code === 96 || code === 99) && prob >= 30) mark('granizo', i, prob);\n  else if (code === 95 && prob >= 40) mark('tormenta', i, prob);\n  if (gust !== null && gust >= 60) mark('viento', i, gust);\n  if (rain !== null && rain >= 10) mark('lluvia', i, rain);\n  if (temp !== null && temp >= 38) mark('calor', i, temp);\n  if (temp !== null && temp <= 0) mark('helada', i, -temp);\n}\nconst s = $getWorkflowStaticData('global');\ns.sent = s.sent || {};\nfor (const k of Object.keys(s.sent)) if (s.sent[k] < Date.now() - 3 * 864e5) delete s.sent[k];  // forget after 3 days\nconst when = (f) => {\n  const a = at(f.from), b = (at(f.to) + 1) % 24;\n  const today = h.time[0].slice(0, 10);\n  const las = (n) => (n === 1 ? 'la 1' : `las ${n}`);\n  return (f.day === today ? '' : 'mañana ') + (a === at(f.to) ? `a ${las(a)} h` : `entre ${las(a)} y ${las(b)} h`);\n};\nconst TEXT = {\n  granizo: (f) => [`Tormenta con posible granizo ${when(f)}`, `Probabilidad ${f.peak}%. Guardá el auto y lo que haya afuera.`, 'cloud_with_lightning_and_rain', 5],\n  tormenta: (f) => [`Tormenta ${when(f)}`, `Probabilidad ${f.peak}%. Puede haber cortes de luz: el server aguanta con la batería.`, 'cloud_with_lightning', 4],\n  viento: (f) => [`Viento fuerte ${when(f)}`, `Ráfagas de hasta ${Math.round(f.peak)} km/h.`, 'wind_face', 4],\n  lluvia: (f) => [`Lluvia fuerte ${when(f)}`, `Hasta ${f.peak.toFixed(0)} mm en una hora.`, 'umbrella', 3],\n  calor: (f) => [`Calor extremo ${when(f)}`, `Hasta ${Math.round(f.peak)}°.`, 'hot_face', 3],\n  helada: (f) => [`Helada ${when(f)}`, `Hasta ${-Math.round(f.peak)}°. Las plantas, adentro.`, 'snowflake', 3],\n};\n// What's new since the last notices, worst first, in one notice. Each kind once every 12 hours: a\n// storm that goes on past midnight isn't a new one.\nconst fresh = [];\nfor (const [kind, f] of Object.entries(found)) {\n  if (s.sent[kind] && Date.now() - s.sent[kind] < 12 * 3600e3) continue;\n  s.sent[kind] = Date.now();\n  if (kind === 'tormenta' && found.granizo) continue;  // the hail line says it all\n  fresh.push(TEXT[kind](f));\n}\nif (!fresh.length) return [];\nfresh.sort((a, b) => b[3] - a[3]);\nconst [title, message, tag, priority] = fresh[0];\nconst more = fresh.slice(1).map(([t, m]) => `${t}: ${m}`);\nreturn [{ json: { title, message: [message, ...more].join('\\n'), tag, priority } }];\n"
+      }
+    },
+    {
+      "id": "8b22b55c-ff13-54e0-a3ab-7eb4dd8f864e",
+      "name": "Avisar por ntfy",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        660,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:8091",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ topic: $env.NTFY_TOPIC, title: $json.title, message: $json.message, tags: [$json.tag], priority: $json.priority }) }}",
+        "options": {
+          "timeout": 20000
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Cada 2 horas": {
+      "main": [
+        [
+          {
+            "node": "Pronóstico por hora",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Probar": {
+      "main": [
+        [
+          {
+            "node": "Pronóstico por hora",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pronóstico por hora": {
+      "main": [
+        [
+          {
+            "node": "Buscar mal tiempo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Buscar mal tiempo": {
+      "main": [
+        [
+          {
+            "node": "Avisar por ntfy",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "America/Argentina/Cordoba",
+    "saveDataSuccessExecution": "none",
+    "saveDataErrorExecution": "all"
+  },
+  "pinData": {},
+  "meta": {
+    "note": "open-meteo hourly forecast for Córdoba (no key); SMN's alerts API sits behind a Cloudflare challenge."
+  },
+  "tags": []
+}

@@ -1,0 +1,123 @@
+{
+  "id": "colaRevision0001",
+  "name": "Finanzas · gastos para revisar",
+  "description": null,
+  "active": true,
+  "nodes": [
+    {
+      "id": "f0b8ee36-57f6-5576-b798-ddbb0f65cd0a",
+      "name": "Todos los días 21 h",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 21 * * *"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "49b8fef9-75cb-5ad4-b6a5-f55ff9c9b11b",
+      "name": "Finanzas",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        220,
+        0
+      ],
+      "parameters": {
+        "url": "http://host.docker.internal:3013/api/estado",
+        "options": {
+          "timeout": 20000
+        }
+      }
+    },
+    {
+      "id": "cb144f35-a02b-5981-a864-8c6abf2e944c",
+      "name": "¿Se acumularon?",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        440,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// From 20 pending on; again only when 10 more pile up or a week went by.\nconst MINIMO = 20;\nconst st = $input.first().json;\nconst n = st.para_revisar ?? 0;\nconst s = $getWorkflowStaticData('global');\nif (n < MINIMO) { delete s.ultimo; return []; }\nif (s.ultimo && n < s.ultimo.n + 10 && Date.now() - s.ultimo.at < 7 * 864e5) return [];\ns.ultimo = { n, at: Date.now() };\nreturn [{ json: {\n  title: 'Gastos para revisar',\n  message: `Tenés ${n} gastos esperando categoría. Revisarlos te lleva unos minutos y los gráficos quedan bien.`,\n  tag: 'receipt', click: st.url + '/revisar',\n} }];\n"
+      }
+    },
+    {
+      "id": "b4aedb2f-10b4-5d0e-a3c4-2785e59d9b46",
+      "name": "Avisar por ntfy",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        660,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:8091",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ topic: $env.NTFY_TOPIC, title: $json.title, message: $json.message, tags: [$json.tag || 'robot'], click: $json.click, priority: $json.priority || 3 }) }}",
+        "options": {
+          "timeout": 20000
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Todos los días 21 h": {
+      "main": [
+        [
+          {
+            "node": "Finanzas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Finanzas": {
+      "main": [
+        [
+          {
+            "node": "¿Se acumularon?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "¿Se acumularon?": {
+      "main": [
+        [
+          {
+            "node": "Avisar por ntfy",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "America/Argentina/Cordoba",
+    "saveDataSuccessExecution": "all",
+    "saveDataErrorExecution": "all"
+  },
+  "pinData": {},
+  "meta": {
+    "note": "Nudges when 20 or more expenses wait for a category."
+  },
+  "tags": []
+}

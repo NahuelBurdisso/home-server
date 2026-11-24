@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="bar"><h1>❯ mapa</h1>
+  <span class="dim">{% if down %}<b class="red">caído: {{ down | join(', ') }}</b>{% else %}todo lo medido anda{% endif %} · pasá el dedo por un recuadro para ver sus conexiones</span>
+</div>
+<div class="panel pad mapwrap">{{ svg }}</div>
+<p class="foot">Verde: anda (Uptime Kuma o su contenedor, último minuto). Rojo: caído, y en rojo lo que depende de él. Gris: no se mide desde acá.
+  En la Wi-Fi de casa solo responden Caddy (:80), Immich (:2283), Jellyfin (:8096) y el DNS; todo lo demás es solo del tailnet.</p>
+{% endblock %}

@@ -1,0 +1,19 @@
+# Phase 5: checks each service and alerts your phone through ntfy.
+services:
+  uptime-kuma:
+    image: louislam/uptime-kuma:2
+    container_name: uptime-kuma
+    ports:
+      - "127.0.0.1:3011:3001"  # this Mac only: others reach it through Caddy or tailscale serve
+    volumes:
+      - ./data:/app/data
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - default
+      - dockerapi  # to check socket-proxy (http://socket-proxy:2375/_ping)
+    restart: unless-stopped
+
+networks:
+  dockerapi:
+    external: true  # created by socket-proxy/compose.yml

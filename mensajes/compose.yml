@@ -1,0 +1,34 @@
+# The house's Telegram bot: write or send a voice note to it and it lands in Lista, Finanzas,
+# Recordatorios or Papeles, or the local AI answers. Built here, not pulled.
+# The bot asks Telegram for messages itself (long polling): nothing is opened to the internet.
+# Its page (token, invitations, who may write) is tailnet only, through tailscale serve:
+# https://mac-server.tailnet-ejemplo.ts.net:3019
+services:
+  mensajes:
+    build: .
+    image: mensajes:local
+    container_name: mensajes
+    ports:
+      - "127.0.0.1:3019:8000"  # this Mac only: others reach it through tailscale serve
+    environment:
+      TZ: America/Argentina/Cordoba
+      # Who may open the page (Tailscale login, as in the admin console). Others get a 403.
+      MENSAJES_ALLOWED_LOGINS: NahuelBurdisso@github
+      MENSAJES_URL: https://mac-server.tailnet-ejemplo.ts.net:3019
+      # What the rules don't recognize goes to the local AI with the apps as tools (app/ia.py).
+      MENSAJES_IA: ollama
+      OLLAMA_URL: http://host.docker.internal:11434
+      OLLAMA_MODEL: qwen3:8b
+      NTFY_URL: http://host.docker.internal:8091
+    extra_hosts:
+      - "host.docker.internal:host-gateway"  # the apps, Ollama and ntfy run on the Mac's ports
+    volumes:
+      - ./data:/data
+      - ../secrets/ntfy-topic:/run/secrets/ntfy-topic:ro
+      # The bot's token from @BotFather. Writable: the page saves it when you paste it there.
+      - ../secrets/telegram-token:/run/secrets/telegram-token
+      # Whisper "small", already downloaded by Open WebUI for the Asistente (app/voz.py).
+      - ../open-webui/data/cache/whisper/models:/whisper:ro
+    labels:
+      diun.enable: "false"  # local image, nothing to watch
+    restart: unless-stopped

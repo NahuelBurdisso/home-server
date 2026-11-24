@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Vigilancias</h1>
+{% if error %}<p class="warn">{{ error }}</p>{% endif %}
+{% if ok %}<p class="ok-box">{{ ok }}</p>{% endif %}
+
+{% for w in watches %}
+<a class="card watch" href="/v/{{ w.id }}">
+  <h2>{{ w.name }} <span class="pill {{ 'off' if not w.active else 'bad' if w.fails else '' }} kind">{{ state(w) }}</span></h2>
+  <p class="read{{ ' big' if w.kind == 'precio' }}">{{ card_text(w) }}</p>
+  <div class="meta">
+    <span>{{ {'cambio': 'si cambia', 'precio': 'precio', 'texto': ('si aparece' if w.cuando == 'aparece' else 'si desaparece') ~ ' «' ~ w.needle ~ '»'}[w.kind] }}</span>
+    <span>leída {{ ago(w.last_ok) }}</span>
+    {% if w.last_change and w.last_change != w.created_at %}<span>cambió {{ ago(w.last_change) }}</span>{% endif %}
+    <span>{{ every_text(w.every_min) }}</span>
+  </div>
+</a>
+{% else %}
+<div class="card empty">
+  <p><strong>Todavía no vigilo nada.</strong></p>
+  <p class="muted">Pegá abajo un link, o mandale al bot «seguí el precio de &lt;link&gt;».</p>
+</div>
+{% endfor %}
+
+<form class="card form" method="post" action="/vigilar">
+  <h2>Vigilar una página</h2>
+  <label>Link<input name="url" type="url" inputmode="url" required placeholder="https://…"></label>
+  <label>Avisame
+    <select name="kind" id="kind">
+      <option value="cambio">si cambia</option>
+      <option value="precio">si baja el precio</option>
+      <option value="texto">si aparece o desaparece un texto</option>
+    </select>
+  </label>
+  <div class="two" data-for="texto">
+    <label>Texto<input name="needle" placeholder="turnos disponibles"></label>
+    <label>Cuando
+      <select name="cuando"><option value="aparece">aparezca</option><option value="desaparece">desaparezca</option></select>
+    </label>
+  </div>
+  <div class="two" data-for="precio">
+    <label>Avisame si baja de<input name="objetivo" inputmode="decimal" placeholder="150.000 (opcional)"></label>
+    <label>o si baja más de (%)<input name="umbral" inputmode="decimal" value="1"></label>
+  </div>
+  <details class="more-fields">
+    <summary>Más opciones</summary>
+    <div class="form">
+      <label>Nombre<input name="name" placeholder="el título de la página"></label>
+      <label>Selector CSS (solo una parte de la página)<input name="selector" placeholder=".precio, #turnos"></label>
+      <label>Cada
+        <select name="every_min">
+          <option value="15">15 minutos</option><option value="30">30 minutos</option>
+          <option value="60" selected>1 hora</option><option value="180">3 horas</option>
+          <option value="720">12 horas</option><option value="1440">1 día</option>
+        </select>
+      </label>
+    </div>
+  </details>
+  <button class="button">Vigilar</button>
+  <p class="note">La leo ahora mismo y te muestro lo que leí: si la página se arma con JavaScript o pide login, te lo digo acá.</p>
+</form>
+
+<script>
+// Only the fields of the chosen kind.
+const kind = document.getElementById("kind");
+const show = () => document.querySelectorAll("[data-for]").forEach((el) => { el.hidden = el.dataset.for !== kind.value; });
+kind.addEventListener("change", show);
+show();
+</script>
+{% endblock %}

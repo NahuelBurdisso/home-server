@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Proveedores</h1>
+{% for p in rows %}
+<details class="card provider" {{ 'open' if missing(p) and p.active }}>
+  <summary class="row-between"><span>{{ p.name }}{% if not p.active %} <small>(pausado)</small>{% endif %}</span>
+    <span class="pill">{{ KINDS[p.kind] }}</span></summary>
+  {% if missing(p) %}<p class="warn" style="margin-top:10px">{{ missing(p) }}</p>{% endif %}
+  {% if p.kind == 'pedix' %}
+  <p class="note">{{ p.n }} productos · catálogo {{ when(p.catalog_at) }}{% if p.catalog_error %} · último intento: {{ p.catalog_error }}{% endif %}</p>
+  <form method="post" action="/proveedores/{{ p.id }}/actualizar" style="margin-top:8px"><button class="button soft" style="width:100%">Actualizar precios</button></form>
+  {% endif %}
+  <form method="post" action="/proveedores/{{ p.id }}" class="form" style="margin-top:12px">
+    <label>Nombre <input name="nombre" value="{{ p.name }}"></label>
+    {% if p.kind != 'whatsapp' %}<label>{{ 'Link de pedix' if p.kind == 'pedix' else 'Link de la tienda' }} <input name="url" value="{{ p.url }}" placeholder="https://"></label>{% endif %}
+    {% if p.kind != 'web' %}<label>WhatsApp <input name="phone" value="{{ p.phone }}" inputmode="tel" placeholder="549351..."></label>{% endif %}
+    <fieldset class="checks"><legend>Qué secciones de la Lista le tocan</legend>
+      {% for sid, label in SECTIONS.items() %}<label><input type="checkbox" name="sections" value="{{ sid }}" {{ 'checked' if sid in sections_of(p) }}> {{ label }}</label>{% endfor %}
+    </fieldset>
+    <label>Compra mínima <input name="minimo" inputmode="numeric" value="{{ p.min_purchase | int if p.min_purchase else '' }}"></label>
+    <label>Nota <input name="note" value="{{ p.note }}"></label>
+    <label style="display:flex;align-items:center;gap:10px;color:var(--ink)"><input type="checkbox" name="active" value="1" {{ 'checked' if p.active }}> Activo</label>
+    <button class="button">Guardar</button>
+  </form>
+</details>
+{% endfor %}
+
+<section class="card">
+  <h2>Agregar un proveedor</h2>
+  <form method="post" action="/proveedores" class="form">
+    <label>Nombre <input name="nombre" placeholder="Carnicería del barrio"></label>
+    <label>Link de pedix, teléfono de WhatsApp o link de la tienda <input name="link" autocomplete="off" placeholder="https://pedix.app/..."></label>
+    <fieldset class="checks"><legend>Qué secciones de la Lista le tocan</legend>
+      {% for sid, label in SECTIONS.items() %}<label><input type="checkbox" name="sections" value="{{ sid }}"> {{ label }}</label>{% endfor %}
+    </fieldset>
+    <button class="button">Agregar</button>
+  </form>
+</section>
+<a class="more" href="/ajustes">Dirección y nombre para los pedidos →</a>
+{% endblock %}

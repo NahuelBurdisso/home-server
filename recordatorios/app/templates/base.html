@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#6d28d9">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Recordatorios">
+  <title>Recordatorios</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <link rel="apple-touch-icon" href="/static/icon.png">
+</head>
+<body>
+  <main>{% block content %}{% endblock %}</main>
+  <nav class="tabs">
+    <a href="/" class="{{ 'on' if page == 'proximos' }}"><span>◷</span>Próximos</a>
+    <a href="/nuevo" class="{{ 'on' if page == 'editar' and not r.id }}"><span>＋</span>Nuevo</a>
+    <a href="/todos" class="{{ 'on' if page == 'todos' }}"><span>≡</span>Todos</a>
+    <a href="/ayuda" class="{{ 'on' if page == 'ayuda' }}"><span>?</span>iPhone</a>
+  </nav>
+</body>
+</html>

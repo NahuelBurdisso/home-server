@@ -1,0 +1,12 @@
+secrets/
+*/data/
+*/.env
+immich/library/
+immich/postgres/
+*.log
+.DS_Store
+n8n/feed/
+sqlite-dumps/
+__pycache__/
+soundbox/src/
+soundbox/bin/

@@ -1,0 +1,21 @@
+# Phase 8: ChatGPT-style interface for the native Ollama on the Mac.
+services:
+  open-webui:
+    image: ghcr.io/open-webui/open-webui:0.12
+    container_name: open-webui
+    ports:
+      - "127.0.0.1:3012:8080"  # this Mac only: others reach it through Caddy or tailscale serve
+    environment:
+      OLLAMA_BASE_URL: http://host.docker.internal:11434
+      # tailscale serve says who is asking: you're signed in without a password.
+      # Your account's email is your Tailscale login (nahuelburdisso@github) so it finds your chats.
+      WEBUI_AUTH_TRUSTED_EMAIL_HEADER: Tailscale-User-Login
+      WEBUI_AUTH_TRUSTED_NAME_HEADER: Tailscale-User-Name
+      # The apps' tools hear who is asking (X-OpenWebUI-User-Email, the same Tailscale login):
+      # a cash expense written down from the Asistente is that person's in Finanzas.
+      ENABLE_FORWARD_USER_INFO_HEADERS: "true"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ./data:/app/backend/data
+    restart: unless-stopped

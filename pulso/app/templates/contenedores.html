@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="bar"><h1>❯ contenedores</h1>{% include "_ranges.html" %}</div>
+<section class="panel">
+  <table class="ctr full">
+    <thead><tr><th>nombre</th><th class="num">ram</th><th class="num">pico</th><th>ram</th><th class="num">cpu</th><th class="num">prom.</th><th>cpu</th><th class="num">caídas</th></tr></thead>
+    {% for c in containers %}
+    <tr class="{{ 'off' if c.running is sameas false else '' }}">
+      <td><a href="/contenedores/{{ c.name }}">{{ c.name }}</a>{% if c.running is sameas false %} <span class="dim">(parado)</span>{% elif c.running is none %} <span class="dim">(sin medir)</span>{% endif %}</td>
+      <td class="num">{{ fmt(c.mem, 'B') }}</td>
+      <td class="num dim">{{ fmt(c.mem_peak, 'B') }}</td>
+      <td class="spark-cell">{{ c.mem_chart }}</td>
+      <td class="num">{{ fmt(c.cpu, '%') }}</td>
+      <td class="num dim">{{ fmt(c.cpu_avg, '%') }}</td>
+      <td class="spark-cell">{{ c.cpu_chart }}</td>
+      <td class="num {{ 'bad' if c.crashes }}">{{ c.crashes or '' }}{% if c.starts %} <span class="dim">↻{{ c.starts }}</span>{% endif %}</td>
+    </tr>
+    {% endfor %}
+  </table>
+</section>
+<p class="foot">CPU: 100% = un núcleo entero (como <code>docker stats</code>). ↻ = veces que arrancó en el período.</p>
+{% endblock %}

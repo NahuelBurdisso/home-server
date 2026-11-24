@@ -1,0 +1,364 @@
+{
+  "id": "resumenSemanal01",
+  "name": "Server · resumen del domingo",
+  "description": null,
+  "active": true,
+  "nodes": [
+    {
+      "id": "7a46520b-d1b8-5ad0-b7ab-646b6de03b93",
+      "name": "diun avisa",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        -220
+      ],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "diun",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "webhookId": "efa0ef9b-dd06-5bde-a8fd-3c55be224c95"
+    },
+    {
+      "id": "6159c739-17b0-5845-8ca0-723a85be6ff2",
+      "name": "Anotar actualización",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        -220
+      ],
+      "parameters": {
+        "jsCode": "// diun calls on every new image it sees; they wait here until Sunday instead of one alert each.\nconst s = $getWorkflowStaticData('global');\ns.actualizaciones = s.actualizaciones || {};\nfor (const { json } of $input.all()) {\n  const b = json.body || json;\n  if (b.status !== 'update') continue;  // 'new' is diun's first look at an image, not news\n  s.actualizaciones[b.image] = b.metadata?.ctn_names || b.image;\n}\nreturn [];\n"
+      }
+    },
+    {
+      "id": "2ee65ece-3d31-5fd3-bb37-54537f3d672b",
+      "name": "Domingo 20 h",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 20 * * 0"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "49b8fef9-75cb-5ad4-b6a5-f55ff9c9b11b",
+      "name": "Finanzas",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        220,
+        0
+      ],
+      "parameters": {
+        "url": "http://host.docker.internal:3013/api/estado",
+        "options": {
+          "timeout": 20000
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "049de113-274a-5c5c-aa02-455b2ed5378d",
+      "name": "Recordatorios",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        440,
+        0
+      ],
+      "parameters": {
+        "url": "http://host.docker.internal:3014/api/proximos?dias=7",
+        "options": {
+          "timeout": 20000,
+          "response": {
+            "response": {
+              "responseFormat": "text",
+              "outputPropertyName": "data"
+            }
+          }
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "6281eb5e-b85e-50f1-928a-af44926e8674",
+      "name": "Estado del Mac",
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        660,
+        0
+      ],
+      "parameters": {
+        "operation": "read",
+        "fileSelector": "/home/node/.n8n-files/estado.json",
+        "options": {}
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "3fce5f06-ea87-51cd-a095-6505bab3e65c",
+      "name": "Leer estado",
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        880,
+        0
+      ],
+      "parameters": {
+        "operation": "fromJson",
+        "options": {}
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "8cdbf601-ff07-536a-899e-cc02d730eb3c",
+      "name": "Dólar",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1100,
+        0
+      ],
+      "parameters": {
+        "url": "https://dolarapi.com/v1/dolares/bolsa",
+        "options": {
+          "timeout": 20000
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "db869f2f-288a-59bb-8bb0-c1cd5c49f5e9",
+      "name": "Pulso",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1320,
+        0
+      ],
+      "parameters": {
+        "url": "http://host.docker.internal:3015/api/resumen",
+        "options": {
+          "timeout": 20000
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "70f3879a-d19c-5252-9d55-d020d46d1b59",
+      "name": "Armar resumen",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1540,
+        0
+      ],
+      "parameters": {
+        "jsCode": "const get = name => { try { const j = $(name).first().json; return j.error ? null : j; } catch { return null; } };\nconst fin = get('Finanzas'), rec = get('Recordatorios'), dolar = get('Dólar'), pulso = get('Pulso');\nconst mac = get('Leer estado')?.data ?? get('Leer estado');\nconst dmy = d => d.slice(0, 10).split('-').reverse().slice(0, 2).join('/');\nconst fmt = n => '$ ' + Math.round(n).toLocaleString('es-AR');\nconst lines = [];\n\nif (fin) {\n  const m = fin.mes_anterior;\n  if (m) {\n    const verbo = m.quedo_centavos >= 0 ? 'te quedaron' : 'gastaste de más';\n    lines.push(`💰 ${m.nombre[0].toUpperCase() + m.nombre.slice(1)}: ${verbo} ${m.quedo.replace('−', '')}`\n      + (m.top.length ? ` (${m.top.join(', ')})` : '')\n      + (m.faltan.length ? `. Faltan datos de ${m.faltan.join(', ')}` : '') + '.');\n  }\n  if (fin.para_revisar) lines.push(`🧾 ${fin.para_revisar} gastos para revisar en Finanzas.`);\n  for (const v of fin.vencimientos || []) {\n    lines.push(`💳 ${v.cuenta} vence el ${dmy(v.vence)}` + (v.total ? `: ${[v.total, v.total_usd].filter(Boolean).join(' + ')}` : '') + '.');\n  }\n} else lines.push('💰 Finanzas no respondió.');\nif (dolar?.venta) lines.push(`💵 Dólar MEP ${fmt(dolar.venta)}.`);\nif (rec?.data) lines.push(`📅 ${rec.data}`);\n\nif (mac?.system) {\n  const c = mac.containers || {}, b = mac.backup || {};\n  lines.push(`🖥️ ${c.running}/${c.total} contenedores, ${mac.system.disk_free_gb} GB libres`\n    + (b.last ? `, último backup ${dmy(b.last)} ${b.last.slice(11, 16)}` : '') + '.');\n  if (b.last && Date.now() - new Date(b.last) > 2 * 864e5) lines.push('⚠️ El backup tiene más de 2 días.');\n  if (c.down?.length) lines.push(`⚠️ Caídos: ${c.down.join(', ')}.`);\n  // restore-drill.sh, Sundays at 5:00: did a test restore of last night's backup work?\n  const d = mac.simulacro, r = d?.repos?.[0];\n  if (!d || Date.now() - new Date(d.fecha) > 8 * 864e5) lines.push('⚠️ No hubo simulacro de restauración esta semana (setup/restore-drill.sh).');\n  else if (!d.ok) lines.push(`⚠️ El simulacro de restauración falló: ${d.problemas.join('; ')}.`);\n  else lines.push(`🛟 Backup probado: volvieron ${r.sqlite.ok}/${r.sqlite.total} bases y ${r.archivos.ok} archivos al azar, Finanzas arrancó con ${r.finanzas.movimientos} movimientos`\n    + (d.repos.length > 1 ? ', también desde la copia externa.' : '.'));\n  if (d && !d.offsite) lines.push('⚠️ Sin copia fuera de casa: si se pierde el Mac, se pierde el backup.');\n  if (mac.caidas_7d?.length) lines.push(`📉 Cortes en la semana: ${mac.caidas_7d.map(x => `${x.servicio} ${x.caidas}`).join(', ')}.`);\n  // Pulso (pulso/): the week minute by minute, from inside the house.\n  if (pulso) {\n    const min = m => m < 60 ? `${m} min` : `${Math.floor(m / 60)} h ${m % 60} min`;\n    const net = pulso.internet_cortes_7d ? `${pulso.internet_cortes_7d} corte${pulso.internet_cortes_7d > 1 ? 's' : ''} de internet (${min(pulso.internet_min_caido_7d)})` : 'internet sin cortes';\n    const luz = pulso.cortes_luz_7d ? `${pulso.cortes_luz_7d} corte${pulso.cortes_luz_7d > 1 ? 's' : ''} de luz (${min(pulso.min_sin_luz_7d)})` : 'sin cortes de luz';\n    const v = pulso.velocidad_7d;\n    lines.push(`📈 ${net}, ${luz}.` + (v ? ` Velocidad: ${v.bajada}/${v.subida ?? '?'} Mbit/s promedio, la peor bajada ${v.bajada_min}.` : ''));\n    const crashed = Object.entries(pulso.contenedores_caidos_7d || {});\n    if (crashed.length) lines.push(`💥 Contenedores con problemas: ${crashed.map(([n, c]) => `${n} ${c}`).join(', ')} (detalle en Pulso).`);\n    if (pulso.disco && !pulso.disco.startsWith('pronóstico')) lines.push(`💽 Disco: ${pulso.disco}.`);\n  }\n} else lines.push('🖥️ No pude leer el estado del Mac (setup/n8n-feed.sh).');\n\nconst s = $getWorkflowStaticData('global');\nconst ups = [...new Set(Object.values(s.actualizaciones || {}))];\nif (ups.length) lines.push(`⬆️ Hay versión nueva de ${ups.join(', ')}: se actualizan solas el 1° a las 4:30.`);\ns.actualizaciones = {};\n\nreturn [{ json: { resumen: lines.join('\\n') } }];\n"
+      }
+    },
+    {
+      "id": "ebc08147-9253-5c49-ab55-c3803f3a7192",
+      "name": "Comentario de la IA",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1760,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:11434/api/chat",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ model: 'qwen3:8b', stream: false, think: false, options: { temperature: 0.3 }, messages: [{ role: 'system', content: \"Leés el resumen semanal del servidor casero y de las finanzas de una persona. Escribí UNA sola oración corta en español rioplatense con la observación más útil o una acción concreta para esta semana. Usá solo datos del texto, no inventes números, sin saludo ni emojis.\" }, { role: 'user', content: $json.resumen }] }) }}",
+        "options": {
+          "timeout": 180000
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "cb6ecc8e-5d33-5861-b016-0129de2ba581",
+      "name": "Armar aviso",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1980,
+        0
+      ],
+      "parameters": {
+        "jsCode": "const resumen = $('Armar resumen').first().json.resumen;\nconst ia = ($input.first().json.message?.content || '').replace(/<think>[\\s\\S]*?<\\/think>/g, '').trim();\nreturn [{ json: {\n  title: 'Resumen de la semana', message: resumen + (ia ? `\\n\\n💬 ${ia}` : ''),\n  tag: 'calendar', click: 'https://mac-server.tailnet-ejemplo.ts.net:3013/mes',\n} }];\n"
+      }
+    },
+    {
+      "id": "b4aedb2f-10b4-5d0e-a3c4-2785e59d9b46",
+      "name": "Avisar por ntfy",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2200,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:8091",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ topic: $env.NTFY_TOPIC, title: $json.title, message: $json.message, tags: [$json.tag || 'robot'], click: $json.click, priority: $json.priority || 3 }) }}",
+        "options": {
+          "timeout": 20000
+        }
+      }
+    }
+  ],
+  "connections": {
+    "diun avisa": {
+      "main": [
+        [
+          {
+            "node": "Anotar actualización",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Domingo 20 h": {
+      "main": [
+        [
+          {
+            "node": "Finanzas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Finanzas": {
+      "main": [
+        [
+          {
+            "node": "Recordatorios",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recordatorios": {
+      "main": [
+        [
+          {
+            "node": "Estado del Mac",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Estado del Mac": {
+      "main": [
+        [
+          {
+            "node": "Leer estado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Leer estado": {
+      "main": [
+        [
+          {
+            "node": "Dólar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Dólar": {
+      "main": [
+        [
+          {
+            "node": "Pulso",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Armar resumen": {
+      "main": [
+        [
+          {
+            "node": "Comentario de la IA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Comentario de la IA": {
+      "main": [
+        [
+          {
+            "node": "Armar aviso",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Armar aviso": {
+      "main": [
+        [
+          {
+            "node": "Avisar por ntfy",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pulso": {
+      "main": [
+        [
+          {
+            "node": "Armar resumen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "America/Argentina/Cordoba",
+    "saveDataSuccessExecution": "all",
+    "saveDataErrorExecution": "all"
+  },
+  "pinData": {},
+  "meta": {
+    "note": "diun posts to /webhook/diun; the Mac's status comes from setup/n8n-feed.sh (n8n/feed/estado.json) and Pulso (:3015/api/resumen)."
+  },
+  "tags": []
+}

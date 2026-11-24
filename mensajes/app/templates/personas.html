@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Quién puede escribirle</h1>
+
+{% if waiting %}
+<section class="card">
+  <h2>Le escribieron y no les contesté</h2>
+  <ul class="people">
+    {% for p in waiting %}
+    <li>
+      <div class="who"><strong>{{ who(p) }}</strong><small>{{ p.n }} mensaje{{ 's' if p.n != 1 }}</small></div>
+      <div class="actions">
+        <form method="post" action="/personas/{{ p.id }}/permitir"><button class="link">Autorizar</button></form>
+        <form method="post" action="/personas/{{ p.id }}/borrar"><button class="link">Olvidar</button></form>
+      </div>
+    </li>
+    {% endfor %}
+  </ul>
+  <p class="note">Mientras no los autorices, el bot no les contesta nada. Cualquiera puede encontrar un bot de Telegram por su nombre: por eso nadie entra sin invitación.</p>
+</section>
+{% endif %}
+
+<section class="card">
+  <h2>Autorizados</h2>
+  {% if allowed %}
+  <ul class="people">
+    {% for p in allowed %}
+    <li>
+      <div class="who"><strong>{{ who(p) }}</strong>
+        <small>{% if p.avisos %}<span class="pill">avisos</span>{% endif %}</small></div>
+      <div class="actions">
+        <form method="post" action="/personas/{{ p.id }}/avisos"><button class="link">{{ 'Sin avisos' if p.avisos else 'Mandarle avisos' }}</button></form>
+        <form method="post" action="/personas/{{ p.id }}/nombre" data-name="{{ p.name }}"
+              onsubmit="var n = prompt('Nombre', this.dataset.name); if (n === null) return false; this.nombre.value = n;">
+          <input type="hidden" name="nombre"><button class="link">Nombre</button></form>
+        <form method="post" action="/personas/{{ p.id }}/bloquear"><button class="link">Quitar</button></form>
+      </div>
+    </li>
+    {% endfor %}
+  </ul>
+  <p class="note"><em>Avisos</em>: le llega lo que n8n o las apps manden por <code>/api/enviar</code> (Ayuda).</p>
+  {% else %}
+  <p class="muted">Nadie todavía.</p>
+  {% endif %}
+</section>
+
+{% if has_bot %}
+<section class="card">
+  <h2>Invitar</h2>
+  {% if invite %}
+  <p>Quien abra este link y toque <strong>Iniciar</strong> queda autorizado:</p>
+  <div class="code small">{{ invite[0] }}</div>
+  <p class="note">Una sola persona, hasta mañana a las {{ invite[1] }}.</p>
+  {% else %}
+  <form method="post" action="/invitar"><input type="hidden" name="volver" value="/personas">
+    <button class="button">Crear link de invitación</button></form>
+  {% endif %}
+</section>
+{% endif %}
+{% endblock %}

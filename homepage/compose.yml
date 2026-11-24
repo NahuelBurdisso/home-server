@@ -1,0 +1,19 @@
+# Phase 5: one dashboard with links to every service.
+services:
+  homepage:
+    image: ghcr.io/gethomepage/homepage:v2
+    container_name: homepage
+    ports:
+      - "127.0.0.1:3010:3000"  # this Mac only: others reach it through Caddy or tailscale serve
+    environment:
+      HOMEPAGE_ALLOWED_HOSTS: "*"
+    volumes:
+      - ./config:/app/config
+    networks:
+      - default
+      - dockerapi  # socket-proxy (read-only Docker API)
+    restart: unless-stopped
+
+networks:
+  dockerapi:
+    external: true  # created by socket-proxy/compose.yml

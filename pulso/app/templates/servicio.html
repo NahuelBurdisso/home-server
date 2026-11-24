@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="bar"><h1><a href="/servicios" class="dim">❯ servicios /</a> {{ name }}</h1>{% include "_ranges.html" %}</div>
+{% if view %}
+<section class="stats">
+  <div><b><i class="dot {{ 'up' if view.up == 1 else 'down' if view.up == 0 else 'unk' }}"></i>{{ 'arriba' if view.up == 1 else 'caído' if view.up == 0 else '—' }}</b><small>ahora</small></div>
+  <div><b>{{ fmt(view.ms, 'ms') }}</b><small>respuesta</small></div>
+  <div><b>{{ '%.2f%%' % (view.uptime * 100) if view.uptime is not none else '—' }}</b><small>arriba en 90 días</small></div>
+  <div><b>{{ minutes(view.down_min) if view.down_min else '0 min' }}</b><small>caído en 90 días</small></div>
+</section>
+<div class="panel pad"><h3>Cada día <span class="dim">(90 días)</span></h3>{{ view.strip }}</div>
+{% endif %}
+<div class="panel pad"><h3>Tiempo de respuesta <span class="dim">(en rojo, los minutos caído)</span></h3>{{ latency }}</div>
+<div class="panel pad"><h3>Peor respuesta de cada tramo</h3>{{ peaks }}</div>
+<h2>❯ caídas</h2>
+<section class="panel">
+  <table class="list">
+    {% for o in downs | reverse %}
+    <tr><td>{{ when(o.start, True) }}</td><td class="num">{{ minutes(o.minutes) }}</td></tr>
+    {% else %}
+    <tr><td class="dim">Ninguna caída en este período.</td></tr>
+    {% endfor %}
+  </table>
+</section>
+{% if alerts %}
+<h2>❯ avisos de Uptime Kuma</h2>
+<section class="panel"><ul class="events">{% for e in alerts %}{% include "_event.html" %}{% endfor %}</ul></section>
+{% endif %}
+{% endblock %}

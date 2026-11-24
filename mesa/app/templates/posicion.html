@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% from "_macros.html" import orden_linea %}
+{% block title %}{{ t }} · Mesa{% endblock %}
+{% block content %}
+<div class="top"><a href="/" aria-label="Volver">‹</a><h1>{{ t }}</h1><span></span></div>
+{% if nombre %}<p class="footnote">{{ nombre }}</p>{% endif %}
+
+<section class="card">
+  {% if p %}
+  <h2>Hoy <span class="right">{{ pct(p.peso, false) }} de la cartera</span></h2>
+  <dl class="kv">
+    <dt>Cantidad</dt><dd>{{ cant(p.cantidad) }}</dd>
+    <dt>Precio promedio</dt><dd>{{ num(p.precio_prom) }} USD</dd>
+    <dt>Último cierre</dt><dd>{{ num(p.precio) }} USD</dd>
+    <dt>Valor</dt><dd>{{ num(p.valor) }} USD</dd>
+    <dt>Resultado</dt><dd class="{{ clase_signo(p.pnl) }}">{{ signo(p.pnl) }} USD · {{ pct(p.pnl_pct) }}</dd>
+    <dt>Desde</dt><dd>{{ hora(p.abierta_ts) }}</dd>
+    {% if p.tesis and p.tesis.revisar_el %}<dt>Revisar el</dt><dd>{{ dia(p.tesis.revisar_el) }}</dd>{% endif %}
+  </dl>
+  {% else %}
+  <p class="note">Claude ya no la tiene.</p>
+  {% endif %}
+  {% for c in cierres %}<p class="note">Cerrada {{ hora(c.cerrada_ts) }}: costó {{ num(c.costo) }}, trajo {{ num(c.ingreso) }} y {{ num(c.dividendos) }} de dividendos →
+    <b class="{{ clase_signo(c.resultado) }}">{{ signo(c.resultado) }} USD</b>.</p>{% endfor %}
+</section>
+
+<section class="card">
+  <h2>La historia de la tesis</h2>
+  <ul class="list">
+    {% for h in historia %}
+    <li><div class="row"><span><span class="chip">{{ TIPOS_TESIS[h.tipo] }}</span> {{ hora(h.ts) }}</span>
+      <span class="sub">{% if h.decision_id %}<a href="/decisiones/{{ h.decision_id }}">decisión {{ h.decision_id }}</a>{% endif %}</span></div>
+      <p class="note" style="color:var(--ink)">{{ h.texto }}</p>
+      {% if h.horizonte_meses %}<p class="note">Horizonte: {{ h.horizonte_meses }} meses.{% if h.invalida %} La invalida: {{ h.invalida }}{% endif %}</p>{% endif %}
+      {% if h.fuentes %}<p class="note">Fuentes: {% for f in h.fuentes %}{% if f.startswith('http') %}<a href="{{ f }}" rel="noopener noreferrer">{{ f[:60] }}</a>{% else %}{{ f }}{% endif %}{{ ' · ' if not loop.last }}{% endfor %}</p>{% endif %}
+    </li>
+    {% endfor %}
+  </ul>
+</section>
+
+<section class="card">
+  <h2>Órdenes</h2>
+  <ul class="list">{% for o in ordenes %}{{ orden_linea(o) }}{% endfor %}</ul>
+</section>
+
+{% if eventos %}
+<section class="card">
+  <h2>Dividendos y splits</h2>
+  <ul class="list">
+    {% for ev in eventos %}
+    <li><div class="row"><span>{{ dia(ev.fecha) }} · {{ 'dividendo' if ev.tipo == 'dividendo' else 'split' }}</span>
+      <span>{% if ev.tipo == 'dividendo' %}{{ num(ev.neto_usd) }} USD netos{% else %}× {{ num(ev.valor, 4) }}{% endif %}</span></div>
+      {% if ev.tipo == 'dividendo' %}<p class="sub">{{ num(ev.valor, 4) }} por acción × {{ cant(ev.cantidad) }}, menos la retención</p>{% endif %}</li>
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}
+<p class="footnote"><a href="/decisiones?ticker={{ t }}">Las decisiones sobre {{ t }}</a></p>
+{% endblock %}

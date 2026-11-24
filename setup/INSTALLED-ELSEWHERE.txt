@@ -1,0 +1,5 @@
+# Copies of files installed outside ~/server, kept here so the setup can be rebuilt.
+# launchd/ -> ~/Library/LaunchAgents (wifi-watchdog: /Library/LaunchDaemons + /usr/local/sbin)
+# ubersicht/ -> ~/Library/Application Support/Übersicht/widgets
+# scriptable/mac-server.js -> the iPhone's Scriptable app (paste it there; see the comment at its top)
+# accesos-escritorio.py -> ~/Desktop/*.webloc, one per service with its icon (run it again to rebuild them)

@@ -1,0 +1,5 @@
+<li class="ev {{ e.level }}">
+  <time>{{ when(e.ts) }}</time>
+  <span class="src">{{ {'ntfy': 'aviso', 'docker': 'docker'}.get(e.source, e.source) }}</span>
+  <div><b>{{ e.title }}</b>{% if e.body %}<p>{{ e.body }}</p>{% endif %}</div>
+</li>

@@ -1,0 +1,58 @@
+# Mesa: Claude invests 10,000 play dollars in US stocks and ETFs, decided twice a week through its
+# API, against SPY bought and held (the vara). Built here, not pulled. The design: DISENO.md.
+# Tailnet only, through tailscale serve: https://mac-server.tailnet-ejemplo.ts.net:3020
+# No Caddy name on purpose, like Pulso: it is Nahuel's, and it has no login of its own.
+#
+# One container: the web and its background thread (app/tareas.py: fills at the open, dividends,
+# splits, the daily equity point, the notifications). It is the only writer of data/mesa.db. Open it
+# only from inside the container (docker exec mesa ...): the Mac's sqlite3 and the container don't
+# share WAL safely. Tests: docker compose run --rm mesa pytest -q
+#
+# The third-party skills (skills/, see skills/ORIGEN.md) are mounted read-only at /skills and their
+# scripts run here: docker exec mesa python /skills/<skill>/scripts/<script>.py --output-dir /data/informes/<fecha>
+services:
+  mesa:
+    build: .
+    image: mesa:local
+    container_name: mesa
+    ports:
+      - "127.0.0.1:3020:8000"  # this Mac only: others reach it through tailscale serve
+    environment:
+      TZ: America/Argentina/Cordoba  # on screen; the base is in UTC, session dates in New York
+      # Who may open it (Tailscale login, as in the admin console). Others get a 403.
+      MESA_ALLOWED_LOGINS: NahuelBurdisso@github
+      # Phone notifications through the local ntfy (app/notify.py).
+      MESA_NOTIFY: "1"
+      MESA_URL: https://mac-server.tailnet-ejemplo.ts.net:3020
+      # The contract of DISENO.md (app/reglas.py reads them; changing one after the first fill is
+      # noted in `cambios` and shown in /reglas).
+      MESA_CAPITAL_INICIAL: "10000"
+      MESA_DESLIZAMIENTO_PB: "5"
+      MESA_COMISION_USD: "1"
+      MESA_RETENCION_DIVIDENDOS_PCT: "30"
+      MESA_MAX_ACCION_PCT: "15"
+      MESA_MAX_ETF_PCT: "50"
+      MESA_MAX_ORDENES: "6"
+      MESA_MAX_DECISIONES_DIA: "1"
+      MESA_MAX_DECISIONES_SEMANA: "3"
+      MESA_TESIS_MIN_CARACTERES: "80"
+      MESA_HORIZONTE_MIN_MESES: "12"
+      MESA_VENTA_ANTICIPADA_DIAS: "30"
+      MESA_PRECIO_MIN_USD: "5"
+      MESA_VOLUMEN_MIN_USD: "20000000"
+      MESA_ORDEN_MIN_USD: "10"
+      MESA_RUEDAS_SIN_PRECIO: "5"
+      MESA_SALTO_MAX_PCT: "40"
+      MESA_DIAS_SIN_DECISION: "5"
+      MESA_VEREDICTO_MESES: "12"
+      MESA_VEREDICTO_CAIDA_PTS: "5"
+      MESA_SALUD_DIAS: "4"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"  # ntfy listens on the Mac's 127.0.0.1:8091
+    volumes:
+      - ./data:/data
+      - ./skills:/skills:ro
+      - ../secrets/ntfy-topic:/run/secrets/ntfy-topic:ro
+    labels:
+      diun.enable: "false"  # local image, nothing to watch
+    restart: unless-stopped

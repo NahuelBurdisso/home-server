@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="bar"><h1>❯ guardia <span class="dim">· la mirada de los domingos a los logs y las tablas</span></h1>
+  <form method="post" action="/guardia/correr" class="inline">
+    <button {{ 'disabled' if running }}>{{ 'corriendo…' if running else 'correrlo ahora' }}</button>
+  </form>
+</div>
+{% if running %}<p class="foot">Está leyendo los logs de la semana y preguntándole al modelo: tarda unos minutos. Recargá la página.</p>{% endif %}
+
+{% if g %}
+<section class="panel pad">
+  <h3>{{ when(g.ts, True) }} <span class="dim">· {{ 'lo escribió el modelo (' ~ g.stats.modelo ~ ')' if g.by_model else 'lo escribieron las reglas' }}</span></h3>
+  <div class="report">{{ g.text }}</div>
+  {% if not g.by_model and g.stats.por_que_no_el_modelo %}<small>El modelo no se usó: {{ g.stats.por_que_no_el_modelo }}.</small>{% endif %}
+</section>
+
+<h2>❯ hallazgos <span class="dim">· todos, con la evidencia</span></h2>
+<section class="panel">
+  {% for f in g.findings %}
+  <div class="finding {{ 'same' if f.sigue_igual }}">
+    <b class="g{{ f.gravedad }}">{{ '●' * f.gravedad }}{{ '○' * (3 - f.gravedad) }} {{ f.que }}</b>{% if f.sigue_igual %} <span class="tag">sigue igual</span>{% endif %}
+    <p>{{ f.evidencia }} · {{ f.sugerencia }}</p>
+    {% if f.ejemplo %}<pre>{{ f.ejemplo }}</pre>{% endif %}
+  </div>
+  {% else %}
+  <div class="finding dim">Ninguna regla encontró nada esta semana.</div>
+  {% endfor %}
+</section>
+
+<h2>❯ errores más repetidos <span class="dim">· por contenedor, esta semana</span></h2>
+<section class="panel">
+  <table class="list">
+    {% for c in patterns %}
+    {% for p in c.templates %}
+    <tr>{% if loop.first %}<td rowspan="{{ c.templates | length }}"><a href="/contenedores/{{ c.container }}">{{ c.container }}</a>
+      <small>{{ c.total }} líneas</small></td>{% endif %}
+      <td class="num">{{ p.count }}</td>
+      <td class="tpl">{{ p.template }}<pre>{{ p.example }}</pre></td></tr>
+    {% endfor %}
+    {% else %}
+    <tr><td class="dim">Ninguna línea con pinta de problema en los logs.</td></tr>
+    {% endfor %}
+  </table>
+</section>
+{% set st = g.stats %}
+<p class="foot">Leyó {{ st.contenedores | length }} contenedores ({{ st.contenedores.values() | sum(attribute='lineas') }} líneas,
+  como mucho 20.000 por contenedor){% if st.no_leidos %}; no pudo leer: {{ st.no_leidos | join(', ') }}{% endif %}.
+  {{ st.plantillas }} tipos de error distintos.</p>
+{% else %}
+<p class="foot">Todavía no hay ningún informe. Sale solo los domingos a las 19:00, o con el botón.</p>
+{% endif %}
+
+{% if earlier %}
+<h2>❯ informes anteriores</h2>
+<section class="panel">
+  <table class="list">
+    {% for r in earlier %}
+    <tr><td>{{ when(r.ts, True) }}<small>{{ 'el modelo' if r.by_model else 'las reglas' }}</small></td><td class="report" style="font-size:12px">{{ r.text }}</td></tr>
+    {% endfor %}
+  </table>
+</section>
+{% endif %}
+<p class="foot">Las reglas encuentran (caídas, memoria, errores nuevos o que crecen en los logs, servicios, disco, SSD, batería,
+  backup, internet, alertas repetidas, equipos desconocidos); el modelo local solo lo redacta, en tres líneas, con los números
+  que le pasan. Si falla o contesta cualquier cosa, salen las palabras de las reglas.</p>
+{% endblock %}

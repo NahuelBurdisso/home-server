@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block content %}
+<form class="quick card" method="post" action="/agregar">
+  <label for="texto">¿Qué falta? <span class="count">{{ count }} en la lista</span></label>
+  <div class="quick-row">
+    <input id="texto" name="texto" autocomplete="off" enterkeyhint="done" placeholder="leche, pan y 2 kg de papas">
+    <button class="button">Agregar</button>
+  </div>
+</form>
+
+{% if usual %}
+<section class="card">
+  <h2>Lo de siempre</h2>
+  <form class="chips" method="post" action="/agregar">
+    {% for u in usual %}<button name="texto" value="{{ u.text }}">+ {{ u.text }}</button>{% endfor %}
+  </form>
+</section>
+{% endif %}
+
+{% if groups %}
+<section class="card section">
+  {% for sid, items in groups %}
+  <h3>{{ SECTIONS[sid][1] }} {{ SECTIONS[sid][0] }}</h3>
+  <ul class="items">
+    {% for i in items %}
+    <li data-id="{{ i.id }}">
+      <form class="tick" method="post" action="/i/{{ i.id }}/tilde"><button><span class="box"></span><span class="name">{{ i.text }}</span></button></form>
+      <form class="del" method="post" action="/i/{{ i.id }}/borrar"><button aria-label="Sacar de la lista">×</button></form>
+    </li>
+    {% endfor %}
+  </ul>
+  {% endfor %}
+</section>
+{% else %}
+<div class="card empty">
+  <p><strong>{{ 'Listo: no falta nada.' if not cart else 'Todo en el carrito.' }}</strong></p>
+  <p class="muted">Escribí arriba lo que falta, o dictáselo a Siri (pestaña iPhone).</p>
+</div>
+{% endif %}
+
+{% if cart %}
+<section class="card section">
+  <h2>🧺 En el carrito <span class="count">{{ cart | length }}</span></h2>
+  <ul class="items">
+    {% for i in cart %}
+    <li class="done" data-id="{{ i.id }}">
+      <form class="tick" method="post" action="/i/{{ i.id }}/tilde"><button><span class="box"></span><span class="name">{{ i.text }}</span></button></form>
+    </li>
+    {% endfor %}
+  </ul>
+  <form method="post" action="/terminar" class="finish"><button class="button" style="width:100%">Terminé las compras</button></form>
+</section>
+{% endif %}
+
+<script>
+// A tap ticks at once (no page reload, which is slow with a weak signal in the market).
+document.querySelectorAll("form.tick").forEach((f) => f.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const li = f.closest("li");
+  li.classList.toggle("done");
+  try {
+    const r = await fetch(f.action, { method: "POST", headers: { Accept: "application/json" } });
+    if (!r.ok) throw new Error();
+  } catch { li.classList.toggle("done"); alert("No se pudo guardar: ¿hay señal y Tailscale?"); }
+}));
+</script>
+{% endblock %}

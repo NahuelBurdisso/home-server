@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block content %}
+{% if error %}<p class="warn">{{ error }}</p>{% endif %}
+<header class="month-nav"><a href="/mes" aria-label="Volver">‹</a><h1>Tu plata hoy</h1><span></span></header>
+{% if b.accounts %}
+<section class="card total">
+  <p class="label">Entre todo tenés</p>
+  <p class="big">{{ ars(b.total) }}</p>
+  {% if b.total_usd is not none %}<p class="sub">≈ {{ usd(b.total_usd) }} <span class="muted">· MEP {{ ars(b.mep * 100) }}</span></p>{% endif %}
+</section>
+<section class="card">
+  <ul class="list">
+    {% for it in b.accounts %}
+    <li><span>{{ it.label }}
+      <small>{% if it.usd is defined %}{{ '≈ ' ~ ars(it.now) ~ ' · ' if it.now is not none }}contados el {{ it.since[8:10] }}/{{ it.since[5:7] }}
+      {%- else %}{{ ars(it.start) }} el {{ it.since[8:10] }}/{{ it.since[5:7] }}{{ ', ' ~ ars(it.moved, sign=True) ~ ' desde entonces' if it.moved }}{% endif %}</small></span>
+      <strong>{% if it.usd is defined %}{{ usd(it.usd / 100) }}{% else %}{{ ars(it.now) }}{% endif %}</strong></li>
+    {% endfor %}
+  </ul>
+  <p class="footnote">Cada cuenta sigue sola desde el día que la contaste: los movimientos de BBVA y de Mercado Pago
+    que llegan, los gastos en efectivo que anotás (y lo que sacás del cajero suma al efectivo). Los dólares no se mueven
+    solos: cuando cambien, contalos de nuevo.</p>
+</section>
+{% endif %}
+{% if dues %}
+<section class="card">
+  <h2>Tarjeta por pagar</h2>
+  <ul class="list">
+    {% for d in dues %}
+    <li><span>Vence el {{ d.due[8:10] }}/{{ d.due[5:7] }}
+      <small>{{ 'mínimo ' ~ ars(d.minimum) if d.minimum is not none }}{{ ' · falta el PDF con el detalle' if not d.pdf }}</small></span>
+      <strong>{{ ars(d.total) if d.total is not none }}{{ ' + ' ~ usd(d.total_usd / 100) if d.total_usd }}</strong></li>
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}
+<section class="card">
+  <h2>{{ 'Contar de nuevo' if b.accounts else '¿Cuánto tenés hoy?' }}</h2>
+  <p class="note">Poné lo que tenés hoy en cada lado. Solo empiezan de nuevo las cuentas que cambies; las vacías quedan como están.</p>
+  {% set now = {} %}{% for it in b.accounts %}{% set _ = now.update({it.account: it}) %}{% endfor %}
+  <form method="post" action="/saldos" class="form">
+    {% for acc in ('efectivo', 'mercadopago', 'bbva') %}
+    <label>{{ ACCOUNTS[acc] }} <input name="{{ acc }}" inputmode="decimal" placeholder="$ 0"
+      value="{{ ars(now[acc].now)[2:] if acc in now }}"></label>
+    {% endfor %}
+    <label>Dólares (US$) <input name="dolares" inputmode="decimal" placeholder="0"
+      value="{{ usd(now['dolares'].usd / 100)[4:] if 'dolares' in now }}"></label>
+    <button class="button">Guardar</button>
+  </form>
+</section>
+{% endblock %}

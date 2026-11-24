@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="bar"><h1>❯ internet</h1>{% include "_ranges.html" %}</div>
+<section class="stats">
+  <div><b>{{ '%.2f%%' % (view.uptime * 100) if view.uptime is not none else '—' }}</b><small>con internet</small></div>
+  <div><b>{{ view.outages | length }}</b><small>cortes</small></div>
+  <div><b>{{ minutes(view.down_min) }}</b><small>sin conexión</small></div>
+  <div><b>{{ fmt(view.cf_loss, '%') }}</b><small>pings perdidos</small></div>
+</section>
+<div class="panel pad">
+  <h3>Latencia <span class="dim">(TCP a 1.1.1.1, 8.8.8.8 y al router; en rojo, los que no respondieron)</span></h3>
+  {{ latency }}
+</div>
+<div class="panel pad">
+  <h3>Peor latencia de cada tramo <span class="dim">(Cloudflare)</span></h3>
+  {{ peaks }}
+</div>
+<div class="panel pad">
+  <h3>Velocidad <span class="dim">(Cloudflare, cada 6 h: 25 MB de bajada, 10 MB de subida)</span></h3>
+  {{ speed }}
+  {% if tests %}
+  <table class="list tests">
+    {% for ts, down, up in tests %}<tr><td>{{ when(ts) }}</td><td class="num">↓ {{ '%.0f' % down if down is not none else 'falló' }} Mbit/s</td><td class="num">↑ {{ '%.0f' % up if up is not none else '—' }} Mbit/s</td></tr>{% endfor %}
+  </table>
+  {% else %}<small>Todavía no corrió ningún test.</small>{% endif %}
+</div>
+<div class="panel pad">
+  <h3>¿A qué hora anda peor? <span class="dim">(latencia a Cloudflare por día y hora, últimos 30 días; borde rojo: hubo pings sin respuesta)</span></h3>
+  {{ heat }}
+</div>
+<h2>❯ cortes <span class="dim">· Cloudflare y Google sin responder a la vez</span></h2>
+<section class="panel">
+  <table class="list">
+    {% for o in view.outages | reverse %}
+    <tr><td>{{ when(o.start, True) }}</td><td class="dim">{{ o.weather }}</td><td class="num">{{ minutes(o.minutes) }}</td></tr>
+    {% else %}
+    <tr><td class="dim">Ningún corte en este período.</td></tr>
+    {% endfor %}
+  </table>
+</section>
+{% if raw_limited %}<p class="foot">Los cortes se cuentan con los datos minuto a minuto, que se guardan 14 días.</p>{% endif %}
+{% endblock %}

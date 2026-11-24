@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}Reglas · Mesa{% endblock %}
+{% block content %}
+{% set n = r.numeros %}
+<h1>Las reglas</h1>
+<p class="footnote">Fijadas antes de la primera operación. Los números salen del código (y de compose.yml): son los que rigen ahora.</p>
+
+<section class="card">
+  <h2>Universo</h2>
+  <p class="note" style="color:var(--ink)">Acciones comunes y ETF de EE. UU. en dólares, en {{ r.universo.bolsas | join(', ') }}.
+    Precio de {{ num(n.precio_min_usd, 0) }} USD o más y mediana de volumen en dólares de 20 ruedas de {{ entero(n.volumen_min_usd / 1000000) }} millones o más.</p>
+  <p class="note">{{ r.universo.nota }} Se rechazan por nombre: {{ r.universo.prohibidos_por_nombre | join(', ') }}.</p>
+</section>
+
+<section class="card">
+  <h2>Límites (una decisión que los rompe se rechaza entera)</h2>
+  <ul class="list">
+    <li>Solo largo, sin apalancamiento: no se vende lo que no se tiene ni se compra más que el efectivo.</li>
+    <li>Una acción no pasa del <b>{{ num(n.max_accion_pct, 0) }} %</b> de la cartera por una compra; un ETF, del <b>{{ num(n.max_etf_pct, 0) }} %</b>. Si sube sola, no se la obliga a vender.</li>
+    <li>Hasta <b>{{ n.max_ordenes }}</b> órdenes por decisión, <b>{{ n.max_decisiones_dia }}</b> decisión con órdenes por día y <b>{{ n.max_decisiones_semana }}</b> por semana.</li>
+    <li>Cada compra lleva su tesis ({{ n.tesis_min_caracteres }} caracteres o más), horizonte de <b>{{ n.horizonte_min_meses }} meses</b> o más, qué la invalida y las fuentes. Cada venta, su motivo; vender algo comprado hace menos de {{ n.venta_anticipada_dias }} días exige además un motivo de venta anticipada.</li>
+    <li>Con la mesa en pausa no entra ninguna decisión con órdenes.</li>
+  </ul>
+</section>
+
+<section class="card">
+  <h2>Ejecución y costos (iguales para Claude y la vara)</h2>
+  <ul class="list">
+    <li>Al precio de apertura de la primera rueda que abre después de creada la orden. Primero las ventas, después las compras.</li>
+    <li>Deslizamiento de <b>{{ n.deslizamiento_pb }} pb</b> en contra y comisión de <b>{{ num(n.comision_usd) }} USD</b> por orden.</li>
+    <li>Fraccionarias hasta 6 decimales. Una compra que no entra en el efectivo se achica a lo que hay; por debajo de {{ num(n.orden_min_usd, 0) }} USD se rechaza.</li>
+    <li>Dividendos en efectivo el día ex-dividendo, netos del <b>{{ n.retencion_dividendos_pct }} %</b> de retención. La vara los reinvierte en SPY en la apertura siguiente. Splits: se ajustan cantidad y precio promedio.</li>
+    <li>Una orden que en {{ n.ruedas_sin_precio }} ruedas no encuentra precio se cancela. Nunca se inventa un precio: si Yahoo no contesta, las órdenes esperan.</li>
+    <li>No se cuentan las tasas de la SEC/FINRA, el costo de girar dólares ni los impuestos argentinos.</li>
+  </ul>
+</section>
+
+<section class="card">
+  <h2>La vara y el veredicto</h2>
+  <p class="note" style="color:var(--ink)">{{ r.vara }}</p>
+  <p class="note" style="color:var(--ink)">{{ r.veredicto }} No pasa en cualquier otro caso, y la conclusión es la aburrida: con plata real, comprar el índice.</p>
+  <p class="note">Doce meses de una sola cartera no separan habilidad de suerte: un «pasa» es evidencia débil, no una licencia. Un «no pasa» sí informa.</p>
+</section>
+
+<section class="card">
+  <h2>Los números</h2>
+  <div class="scroll"><table class="table">
+    <tr><th class="l">Regla</th><th>Valor</th></tr>
+    {% for x in numeros %}<tr><td class="l wrap">{{ x.texto }}<br><span class="sub">{{ x.entorno }}</span></td><td>{{ num(x.valor, 0 if x.valor == x.valor|int else 2) }} {{ x.unidad }}</td></tr>{% endfor %}
+  </table></div>
+</section>
+
+<section class="card">
+  <h2>Cambios</h2>
+  {% if cambios %}
+  <ul class="list">{% for c in cambios %}<li><div class="row"><span><b>{{ c.campo }}</b>: {{ c.antes }} → {{ c.despues }}</span><span class="sub">{{ hora(c.ts) }}</span></div>
+    <p class="sub">{{ c.quien }} · {{ c.motivo }}</p></li>{% endfor %}</ul>
+  {% else %}
+  <p class="note">{{ 'Ninguno desde la primera operación.' if empezo else 'Todavía no empezó: hasta la primera operación las reglas se pueden ajustar sin anotarlo.' }}</p>
+  {% endif %}
+</section>
+{% endblock %}

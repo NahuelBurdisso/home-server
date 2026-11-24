@@ -1,0 +1,22 @@
+# Phase 5: notices when a container has a new image, instead of updating blindly. It tells n8n,
+# which lists them in the Sunday summary (n8n/workflows/resumenSemanal01.json) instead of one alert each.
+services:
+  diun:
+    image: crazymax/diun:4
+    container_name: diun
+    command: serve
+    environment:
+      TZ: America/Argentina/Cordoba
+      DIUN_WATCH_SCHEDULE: "0 9 * * *"
+      DIUN_PROVIDERS_DOCKER: "true"
+      DIUN_PROVIDERS_DOCKER_WATCHBYDEFAULT: "true"
+      DIUN_NOTIF_WEBHOOK_ENDPOINT: http://host.docker.internal:5678/webhook/diun
+      DIUN_NOTIF_WEBHOOK_METHOD: POST
+      DIUN_NOTIF_WEBHOOK_HEADERS_CONTENT-TYPE: application/json
+      DIUN_NOTIF_WEBHOOK_TIMEOUT: 10s
+    volumes:
+      - ./data:/data
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped

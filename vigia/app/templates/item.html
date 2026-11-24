@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>{{ item.title or 'Sin título' }}</h1>
+{% if ok %}<p class="ok-box">{{ ok }}</p>{% endif %}
+{% if item.status == 'error' %}<p class="warn">{{ item.error }}</p>{% endif %}
+{% if item.status == 'pendiente' %}<p class="ok-box">Lo estoy leyendo: recargá en un rato.</p>{% endif %}
+{% if item.status == 'sin_resumen' %}<p class="warn">La IA de casa no respondió: el resumen llega cuando vuelva (lo intento cada 15 minutos).</p>{% endif %}
+
+<section class="card">
+  <div class="meta">
+    <span class="pill">{{ KIND_NAMES.get(item.kind, item.kind) }}</span>
+    <span>{{ item.created_at[:16] }}{{ ' · ' ~ item.added_by if item.added_by }}</span>
+  </div>
+  {% if item.url %}<p class="note"><a href="{{ item.url }}" rel="noreferrer noopener" target="_blank">{{ item.url }}</a></p>{% endif %}
+  {% if item.summary %}<h2 style="margin-top:14px">Resumen</h2><p class="summary">{{ item.summary }}</p>{% endif %}
+  <div class="actions">
+    {% if item.status in ('error', 'sin_resumen') %}
+    <form method="post" action="/g/{{ item.id }}/reintentar"><button class="button">Reintentar</button></form>
+    {% endif %}
+    <form method="post" action="/g/{{ item.id }}/borrar" onsubmit="return confirm('¿Borrarlo?')"><button class="button danger-b">Borrar</button></form>
+  </div>
+</section>
+
+{% if item.text %}
+<section class="card">
+  <h2>Texto completo</h2>
+  <p class="fulltext">{{ item.text }}</p>
+</section>
+{% endif %}
+{% endblock %}

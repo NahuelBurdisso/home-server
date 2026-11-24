@@ -1,0 +1,33 @@
+# Read-only Docker API for the dashboards (Homepage's container stats, Pulso, Dozzle, Uptime
+# Kuma's check): they get the container list, stats, logs and events, never the power to start,
+# stop or exec anything. It isn't published on any port: only containers that join the
+# "dockerapi" network reach it (http://socket-proxy:2375), because a container's details include
+# its environment, passwords too (Immich's database), and every other container could ask.
+# The network belongs to this file: start it first after `docker compose down` here.
+services:
+  socket-proxy:
+    image: lscr.io/linuxserver/socket-proxy:latest  # linuxserver has no major-version tag
+    container_name: socket-proxy
+    environment:
+      CONTAINERS: 1
+      INFO: 1
+      PING: 1
+      VERSION: 1
+      EVENTS: 1
+      # Dozzle reads logs; the image denies them unless asked (since the 1 Nov update). Archives and
+      # exports stay off.
+      ALLOW_LOGS: 1
+      POST: 0
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    read_only: true
+    tmpfs:
+      - /run
+    networks:
+      - dockerapi
+    restart: unless-stopped
+
+networks:
+  dockerapi:
+    name: dockerapi
+    internal: true  # nothing in it talks to the outside

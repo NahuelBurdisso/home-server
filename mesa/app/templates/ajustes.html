@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% from "_macros.html" import boton %}
+{% block title %}Ajustes · Mesa{% endblock %}
+{% block content %}
+<h1>Ajustes</h1>
+
+<section class="card status {{ 'warn' if pausada else '' }}">
+  <p class="label"><span class="dot"></span>{{ 'En pausa' if pausada else 'Operando' }}</p>
+  <p class="note">{% if pausada %}No entra ninguna decisión con órdenes (sí las que solo anotan). Lo que ya estaba pendiente se ejecuta igual.
+    {% if pausa_ts %}Desde {{ hora(pausa_ts) }}{% if pausada_por %}, por {{ pausada_por }}{% endif %}.{% endif %}
+    {% else %}Claude puede mandar decisiones con órdenes, dentro de las reglas.{% endif %}</p>
+  <div class="actions">
+    {% if pausada %}{{ boton("mesa/reanudar", "Reanudar", "/ajustes") }}{% else %}{{ boton("mesa/pausar", "Pausar la mesa", "/ajustes", "button danger-outline") }}{% endif %}
+  </div>
+</section>
+
+<section class="card status {{ '' if salud_ok else 'bad' }}">
+  <p class="label"><span class="dot"></span>Datos de Yahoo</p>
+  <dl class="kv">
+    <dt>Última bajada buena</dt><dd>{{ hace(ultima_bajada) }}</dd>
+    <dt>Último cierre procesado</dt><dd>{{ dia(ultimo_cierre) if ultimo_cierre else '—' }}</dd>
+    <dt>Hilo de fondo</dt><dd>{% if not tareas_on %}apagado (MESA_TAREAS=0){% else %}{{ hace(latido) }}{% endif %}</dd>
+  </dl>
+  {% if not salud_ok %}<p class="note">{{ salud_motivo }}</p>{% endif %}
+</section>
+
+<section class="card">
+  <h2>Avisos</h2>
+  <p class="note">{% if notify_on %}Prendidos (MESA_NOTIFY=1): por ntfy al tema del server.{% else %}Apagados (MESA_NOTIFY no es 1): solo quedan en el log.{% endif %}
+    Llegan: cada decisión ejecutada (qué compró y vendió y a cuánto), el resumen de la semana los viernes después del cierre,
+    «Claude no vino» si en 5 días no entró ninguna decisión, velas raras de Yahoo que no se usaron, y el veredicto.</p>
+  <div class="actions">{{ boton("avisos/prueba", "Mandar un aviso de prueba", "/ajustes", "button secondary") }}</div>
+</section>
+
+<section class="card steps" id="iphone">
+  <h2>iPhone y Siri</h2>
+  <ol>
+    <li>Con Tailscale prendido, abrí en Safari <code class="copy">https://mac-server.tailnet-ejemplo.ts.net:3020</code></li>
+    <li><b>Compartir</b> → <b>Agregar a pantalla de inicio</b> → <em>Mesa</em>.</li>
+    <li>Para preguntarle a Siri “¿cómo va la mesa?”: app <b>Atajos</b> → <b>+</b> → <b>Obtener contenido de URL</b>
+      <code class="copy">https://mac-server.tailnet-ejemplo.ts.net:3020/api/frase</code> y después <b>Leer texto</b>.
+      Contesta algo como «Claude va +3,2 % y la vara (SPY) +2,1 %: Claude le gana por 1,1 puntos.»</li>
+    <li>Los avisos llegan por la app ntfy, suscripta al tema del server.</li>
+  </ol>
+</section>
+{% endblock %}

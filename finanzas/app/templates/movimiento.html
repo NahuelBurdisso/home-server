@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block content %}
+<header class="month-nav">
+  <a href="{{ back }}" aria-label="Volver">‹</a><h1>Movimiento</h1><span></span>
+</header>
+
+<section class="card detail">
+  <p class="big {{ 'pos' if t.amount > 0 }}">{{ ars(t.amount, sign=True) }}</p>
+  {% if t.amount_usd %}<p class="muted">{{ usd(t.amount_usd / 100) }}</p>{% endif %}
+  <p class="desc">{{ t.description }}</p>
+  <p class="muted">{{ t.date[8:10] }}/{{ t.date[5:7] }}/{{ t.date[:4] }} · {{ ACCOUNTS[t.account] }}</p>
+</section>
+
+<section class="card">
+  <h2>De quién</h2>
+  <form method="post" action="/movimientos/{{ t.id }}/quien" class="kinds">
+    <input type="hidden" name="back" value="/movimientos/{{ t.id }}?back={{ back | urlencode }}">
+    {% for k, label in PEOPLE.items() %}
+    <button name="quien" value="{{ k }}" class="chip {{ 'on' if t.who == k }}">{{ label }}</button>
+    {% endfor %}
+  </form>
+</section>
+
+<section class="card">
+  <h2>Tipo</h2>
+  <form method="post" action="/movimientos/{{ t.id }}/tipo" class="kinds">
+    <input type="hidden" name="back" value="/movimientos/{{ t.id }}?back={{ back | urlencode }}">
+    {% for k, label in KINDS.items() %}
+    <button name="kind" value="{{ k }}" class="chip {{ 'on' if t.kind == k }}">{{ label }}</button>
+    {% endfor %}
+  </form>
+  <p class="note">"Entre mis cuentas", pago de tarjeta y compra/venta de dólares no cuentan como gasto ni ingreso.</p>
+</section>
+
+{% if t.kind == 'expense' %}
+<section class="card">
+  <h2>Categoría</h2>
+  {% if t.category %}
+  <p class="current">{{ cat_label(t.category, with_group=True) }}
+    <small>{% if t.category_source == 'learned' %}Aprendida de tus correcciones
+      {% elif t.category_source == 'rule' %}Por regla automática
+      {% elif t.category_source == 'user' %}Elegida por vos, solo este movimiento
+      {% elif t.category_source in ('ai', 'ai_sure') %}✨ Sugerida por la IA{{ ', sin confirmar' if t.category_source == 'ai' }}{% endif %}</small></p>
+  {% endif %}
+  <form method="post" action="/movimientos/{{ t.id }}/categoria" class="cat-picker">
+    <input type="hidden" name="back" value="{{ back }}">
+    {% if similar %}
+    <label class="check"><input type="checkbox" name="learn" value="1" checked>
+      <span>Aplicar también {{ 'al otro' if similar == 1 else 'a los otros ' ~ similar }} de «{{ t.merchant }}» y a los que vengan</span></label>
+    {% else %}
+    <label class="check"><input type="checkbox" name="learn" value="1" checked>
+      <span>Recordarlo para los próximos de «{{ t.merchant }}»</span></label>
+    {% endif %}
+    {% for g, emoji, glabel, subs in GROUPS %}
+    <fieldset>
+      <legend>{{ emoji }} {{ glabel }}</legend>
+      {% for s, slabel in subs %}
+      <button name="category" value="{{ g }}.{{ s }}" class="chip {{ 'on' if t.category == g ~ '.' ~ s }}">{{ slabel }}</button>
+      {% endfor %}
+    </fieldset>
+    {% endfor %}
+  </form>
+</section>
+{% endif %}
+
+{% if t.import_id is none %}
+<form method="post" action="/movimientos/{{ t.id }}/borrar" class="danger"
+      onsubmit="return confirm('¿Borrar este movimiento cargado a mano?')">
+  <input type="hidden" name="back" value="{{ back }}"><button>Borrar movimiento</button>
+</form>
+{% endif %}
+{% endblock %}

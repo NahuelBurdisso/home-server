@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="card">
+  <h2>Armar un pedido</h2>
+  <form method="post" action="/armar" class="buttons">
+    <button class="button">Armar con la lista</button>
+  </form>
+  <form method="post" action="/armar" class="chips" style="margin-top:10px">
+    {% for p in providers %}<button name="proveedor" value="{{ p.id }}">{{ p.name }}</button>{% endfor %}
+  </form>
+  <form method="post" action="/armar" class="quick" style="margin-top:14px">
+    <label for="texto">O escribí qué pedir</label>
+    <div class="quick-row">
+      <input id="texto" name="texto" autocomplete="off" enterkeyhint="done" placeholder="2 kg de papas y bananas">
+      <button class="button">Armar</button>
+    </div>
+  </form>
+  <p class="note">Toma lo pendiente en la Lista y lo reparte por proveedor. No manda nada: lo mandás vos.</p>
+</section>
+
+{% if saved %}
+<section class="card">
+  <h2>Guardados</h2>
+  <ul class="list">
+    {% for s in saved %}
+    <li class="saved"><a class="row" href="/p/{{ s.id }}">
+      <span>{{ s.name }} <small>{{ s.provider }}</small></span>
+      <strong>{{ money(s.total_est) if s.total_est else '' }}</strong>
+    </a>
+    <form method="post" action="/p/{{ s.id }}/usar"><button class="button soft">Usar</button></form></li>
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}
+
+{% if open %}
+<section class="card">
+  <h2>Abiertos</h2>
+  <ul class="list">
+    {% for o in open %}
+    <li><a class="row" href="/p/{{ o.id }}">
+      <span>{{ o.provider }} <small>{{ 'armado ' ~ when(o.created_at) if o.status == 'borrador' else 'pedido ' ~ when(o.sent_at) }}</small></span>
+      <strong>{{ money(o.total_est) if o.total_est else '' }}</strong>
+      <span class="pill {{ o.status }}" style="flex:none">{{ STATUS[o.status] }}</span>
+    </a></li>
+    {% endfor %}
+  </ul>
+</section>
+{% else %}
+<div class="card empty"><p><strong>No hay pedidos abiertos.</strong></p>
+  <p class="muted">Armá uno con lo que falta en la Lista.</p></div>
+{% endif %}
+{% endblock %}

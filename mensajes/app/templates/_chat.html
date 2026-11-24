@@ -1,0 +1,8 @@
+<ul class="chat">
+  {% for m in rows %}
+  <li class="{{ 'in' if m.incoming else 'out' }}{{ ' undone' if m.undone }}">
+    <span class="body">{% if m.incoming and m.kind == 'audio' %}🎙️ {% elif m.incoming and m.kind in ('image', 'document') %}📎 {% endif %}{{ m.text or '(' ~ m.kind ~ ')' }}</span>
+    <small>{{ m.at[11:16] }} · {{ m.at[8:10] }}/{{ m.at[5:7] }}{% if m.incoming %} · {{ m.who_name or ('@' ~ m.who_user if m.who_user) or ('esta página' if m.chat == 'web' else '?') }}{% if m.intent %} · {{ KINDS.get(m.intent, m.intent) }}{% endif %}{% endif %}{% if m.undone %} · deshecho{% endif %}</small>
+  </li>
+  {% endfor %}
+</ul>

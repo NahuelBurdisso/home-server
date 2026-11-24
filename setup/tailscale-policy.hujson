@@ -1,0 +1,59 @@
+// Access policy for the home server tailnet.
+// Paste in https://login.tailscale.com/admin/acls/file (replace everything) and Save.
+// setup/acceso-sofia.sh prints it with Sofía's login filled in. Paste it before she accepts the
+// invitation: until then every member reached the whole Mac.
+{
+	// The Mac server's Tailscale IP.
+	"hosts": {
+		"mac-server": "100.64.0.10",
+	},
+
+	"grants": [
+		// Nahuel's devices can reach every service on the Mac server, and nothing else.
+		// Devices can't reach each other, and the server can't start connections to them.
+		{"src": ["NahuelBurdisso@github"], "dst": ["mac-server"], "ip": ["*"]},
+		// Sofía's reach only the house's apps: Caddy (80: Immich and Jellyfin by name), Immich (2283),
+		// Jellyfin (8096), Open WebUI (3012), Finanzas (3013), Recordatorios (3014), Lista (3016),
+		// Papeles (3017), Hoy (3018), Vigía (3021), Pedidos (3022),
+		// ntfy (8443, Recordatorios' avisos) and the DNS (53: the tailnet's
+		// DNS is AdGuard on the Mac). 443 too, because the calendar feed lives there (iOS won't
+		// subscribe on another port); it also shows her Homepage, whose links to the server's tools
+		// lead nowhere for her. Pulso, Mesa, Mensajes' page, Kuma, AdGuard, Dozzle, Glances, n8n, Ollama,
+		// and SSH stay Nahuel's.
+		{
+			"src": ["SOFIA_LOGIN"],
+			"dst": ["mac-server"],
+			"ip": [
+				"tcp:80", "tcp:443", "tcp:2283", "tcp:8096",
+				"tcp:3012", "tcp:3013", "tcp:3014", "tcp:3016", "tcp:3017", "tcp:3018", "tcp:3021", "tcp:3022", "tcp:8443",
+				"tcp:53", "udp:53",
+			],
+		},
+	],
+
+	// Define users and devices that can use Tailscale SSH.
+	"ssh": [
+		{
+			"action": "check",
+			"src":    ["autogroup:member"],
+			"dst":    ["autogroup:self"],
+			"users":  ["autogroup:nonroot", "root"],
+		},
+	],
+
+	// No "funnel" node attribute on purpose: nothing on this tailnet is public.
+
+	// Checked on every save.
+	"tests": [
+		{
+			"src":    "NahuelBurdisso@github",
+			"accept": ["mac-server:80", "mac-server:2283", "mac-server:53", "mac-server:3015"],
+			"deny":   ["100.64.0.20:22"],
+		},
+		{
+			"src":    "SOFIA_LOGIN",
+			"accept": ["mac-server:3013", "mac-server:3016", "mac-server:3021", "mac-server:3022", "mac-server:53"],
+			"deny":   ["mac-server:3015", "mac-server:3019", "mac-server:3020", "mac-server:3011", "mac-server:8080", "mac-server:5678", "mac-server:22"],
+		},
+	],
+}

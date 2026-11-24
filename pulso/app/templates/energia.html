@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="bar"><h1>❯ energía <span class="dim">· la batería es el UPS del server</span></h1>{% include "_ranges.html" %}</div>
+<section class="stats">
+  <div><b>{{ 'enchufado' if view.ac == 1 else 'a batería' if view.ac == 0 else '—' }}</b><small>ahora · {{ fmt(view.pct, '%') }}</small></div>
+  <div><b>{{ view.cuts | length }}</b><small>cortes en 14 días</small></div>
+  <div><b>{{ minutes(view.cuts | sum(attribute='minutes')) if view.cuts else '0 min' }}</b><small>sin luz en total</small></div>
+  <div><b>{{ ('~%.1f h' % view.left_h) if view.left_h else '—' }}</b><small>{{ 'aguantaría a batería' if view.left_h else 'autonomía: falta un corte para medirla' }}</small></div>
+</section>
+<div class="panel pad"><h3>Batería</h3>{{ graph }}
+  <small>Al {{ view.stop_at }}% se detienen los contenedores (sin cortar escrituras) y al {{ view.shutdown_at }}% se apaga el Mac;
+    vuelve solo cuando vuelve la luz (setup/power-alert.sh).{% if battery %} Salud de la batería: {{ battery.max_capacity_pct }}%, {{ battery.cycles }} ciclos.{% endif %}</small>
+</div>
+<h2>❯ cortes de luz <span class="dim">· 14 días</span></h2>
+<section class="panel">
+  <table class="list">
+    {% for c in view.cuts | reverse %}
+    <tr><td>{{ when(c.start, True) }}</td><td class="dim">{{ c.weather }}</td>
+      <td class="num">{{ fmt(c['from'], '%') }} → {{ fmt(c['to'], '%') }}</td><td class="num">{{ minutes(c.minutes) }}</td></tr>
+    {% else %}
+    <tr><td class="dim">Ningún corte de luz en 14 días.</td></tr>
+    {% endfor %}
+  </table>
+</section>
+{% if view.per_min %}<p class="foot">Gasta en promedio {{ '%.2f' % view.per_min }}% de batería por minuto sin luz (medido en los cortes de más de 5 minutos).</p>{% endif %}
+{% endblock %}

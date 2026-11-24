@@ -1,0 +1,17 @@
+title: mac-server
+theme: dark
+color: zinc
+headerStyle: clean
+statusStyle: dot
+hideVersion: true
+cardBlur: none
+# Look and feel (terminal style) lives in custom.css and custom.js.
+layout:
+  Home:
+    style: column
+  Server:
+    style: column
+  Mac:
+    style: row
+    columns: 4
+    header: true

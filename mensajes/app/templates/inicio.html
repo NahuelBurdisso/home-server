@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>El bot de la casa</h1>
+
+{% if not has_token %}
+<section class="card">
+  <h2>Crear el bot (una vez, 2 minutos)</h2>
+  <ol class="steps">
+    <li>En Telegram, abrí <a href="https://t.me/BotFather">@BotFather</a> y mandale <code>/newbot</code>.</li>
+    <li>Nombre: <em>Casa</em> (o el que quieras). Usuario: uno que termine en <code>bot</code>, por ejemplo <em>casa_burdisso_bot</em>.</li>
+    <li>Te contesta con un <strong>token</strong> (<code>123456789:AAH…</code>): pegalo acá.</li>
+  </ol>
+  <form class="form" method="post" action="/token">
+    <label>Token del bot <input name="token" autocomplete="off" spellcheck="false" placeholder="123456789:AAH…"></label>
+    <button class="button">Guardar</button>
+  </form>
+  {% if error %}<p class="warn">{{ error }}</p>{% endif %}
+  <p class="note">Se guarda en <code>~/server/secrets/telegram-token</code>. Nada se abre a internet: el bot le pregunta a Telegram si hay mensajes.</p>
+</section>
+{% else %}
+<section class="card">
+  <div class="status {{ 'ok' if ok else 'bad' }}">
+    <span class="dot"></span>
+    <div>
+      <strong>{{ 'Funcionando' if ok else 'Sin conexión con Telegram' }}</strong>
+      {% if bot.username %}<small><a href="https://t.me/{{ bot.username }}">@{{ bot.username }}</a> · {{ bot.first_name }}</small>{% endif %}
+      {% if not ok %}<small>{{ status_error or 'Arrancando…' }}</small>{% endif %}
+    </div>
+  </div>
+  <p class="note">{{ allowed }} {{ 'persona autorizada' if allowed == 1 else 'personas autorizadas' }}.
+    {% if waiting %}<a href="/personas">{{ waiting }} {{ 'espera' if waiting == 1 else 'esperan' }} que la{{ 's' if waiting != 1 }} autorices →</a>{% endif %}</p>
+</section>
+
+<section class="card">
+  <h2>{{ 'Empezá por vos' if not allowed else 'Invitar a alguien' }}</h2>
+  {% if invite %}
+  <p>Abrí este link en el teléfono {{ 'desde tu Telegram' if not allowed else 'de quien quieras sumar' }} y tocá <strong>Iniciar</strong>:</p>
+  <div class="code small">{{ invite[0] }}</div>
+  <p class="note">Sirve para una sola persona, hasta mañana a las {{ invite[1] }}.</p>
+  {% else %}
+  <p>Un link que autoriza a quien lo abra (una sola persona, por un día).</p>
+  <form method="post" action="/invitar"><button class="button">Crear link de invitación</button></form>
+  {% endif %}
+</section>
+{% endif %}
+
+<section class="card" id="probar">
+  <form class="quick" method="post" action="/probar">
+    <label for="texto">Probar sin el teléfono</label>
+    <div class="quick-row">
+      <input id="texto" name="texto" autocomplete="off" enterkeyhint="send" placeholder="comprar manteca">
+      <button class="button">Enviar</button>
+    </div>
+    <p class="note">Hace lo mismo que si se lo escribieras al bot (de verdad: «borrar» lo deshace).</p>
+  </form>
+</section>
+
+{% if recent %}
+<section class="card">
+  <h2>Últimos mensajes</h2>
+  {% with rows = recent %}{% include "_chat.html" %}{% endwith %}
+  <a class="more" href="/historial">Todo el historial →</a>
+</section>
+{% endif %}
+{% endblock %}

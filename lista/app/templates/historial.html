@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Historial</h1>
+{% if top %}
+<section class="card">
+  <h2>Lo que más comprás</h2>
+  <ul class="list">{% for u in top %}<li><a class="row"><span>{{ u.text }}</span><strong>{{ u.times }} veces</strong></a></li>{% endfor %}</ul>
+</section>
+{% endif %}
+{% for t in trips %}
+<section class="card trip">
+  <h2>{{ t.when[8:10] }}/{{ t.when[5:7] }} {{ t.when[11:16] }} · {{ t['items'] | length }} cosas</h2>
+  <p>{% for r in t['items'] %}{{ SECTIONS[r.section][1] }} {{ r.text }}{{ ', ' if not loop.last }}{% endfor %}</p>
+</section>
+{% else %}
+<div class="card empty"><p class="muted">Cuando toques “Terminé las compras”, lo comprado queda acá.</p></div>
+{% endfor %}
+{% endblock %}

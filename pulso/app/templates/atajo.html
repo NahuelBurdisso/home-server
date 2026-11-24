@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="bar"><h1>❯ iPhone</h1></div>
+<div class="panel pad prose">
+  <h3>“Oye Siri, ¿cómo está el server?”</h3>
+  <p>App <b>Atajos</b> → <b>+</b> → nombre <em>Cómo está el server</em>, con dos acciones:</p>
+  <ol>
+    <li><b>Obtener contenido de URL</b>: <code>https://mac-server.tailnet-ejemplo.ts.net:3015/api/frase</code></li>
+    <li><b>Leer texto</b> (o <b>Mostrar resultado</b>): el contenido de la URL.</li>
+  </ol>
+  <p class="dim">Con Tailscale prendido. Siri contesta algo como: “Todo bien. Internet sin cortes en el día. El último backup
+    fue hace 3 horas. Quedan 408 gigas libres.”</p>
+  <h3>Pulso como app</h3>
+  <p>En Safari, esta página → <b>Compartir</b> → <b>Agregar a pantalla de inicio</b>. Abre sin barra de Safari.</p>
+  <h3>Tus datos</h3>
+  <p>Cualquier serie en CSV para una planilla: <code>/api/serie.csv?k=inet.cf&amp;r=30d</code> (la lista de series en
+    <a href="/api/series">/api/series</a>; rangos 1h, 6h, 24h, 7d, 30d, 1a).</p>
+  <h3>Avisos</h3>
+  <p>Llegan por ntfy al tema del server: caídas de contenedores, disco que se llena, y (desde n8n) el buen día de las 7:30.
+    Todo queda en <a href="/eventos">eventos</a>.</p>
+</div>
+{% endblock %}

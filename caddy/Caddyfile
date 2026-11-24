@@ -1,0 +1,70 @@
+# Short names for every service (http only, tailnet/home use).
+# AdGuard resolves *.lan to this Mac; plain "mac-server" comes from Tailscale MagicDNS.
+{
+	auto_https off
+}
+
+(to) {
+	# Pages, JSON and scripts compressed for the Wi-Fi (Caddy leaves photos and video alone).
+	encode zstd gzip
+	reverse_proxy host.docker.internal:{args[0]}
+}
+
+# Services whose login was turned off (Tailscale says who you are): the short name only
+# forwards to their tailnet HTTPS address, so they never answer on the home Wi-Fi.
+(ts) {
+	redir https://mac-server.tailnet-ejemplo.ts.net:{args[0]}{uri}
+}
+
+# Any other name or IP (the LAN IP, the Tailscale IP) opens Homepage.
+http://mac-server, http://panel.lan, :80 {
+	# webcal:// links may arrive over plain http: send the calendar feed to tailscale serve's HTTPS.
+	redir /recordatorios/* https://mac-server.tailnet-ejemplo.ts.net{uri}
+	import to 3010
+}
+http://fotos.lan {
+	import to 2283
+}
+http://pelis.lan {
+	import to 8096
+}
+http://ia.lan {
+	import ts 3012
+}
+# n8n's login over plain http on the Wi-Fi would send its password in the clear: tailnet HTTPS only.
+http://auto.lan {
+	import ts 5678
+}
+http://adguard.lan {
+	import ts 3000
+}
+http://monitor.lan {
+	import ts 3011
+}
+http://alertas.lan {
+	import to 8091
+}
+# Ollama API for the tailnet: tailscale serve :11434 -> here. Ollama only listens on localhost
+# and refuses other Host names, so Caddy presents itself as localhost.
+http://:11435 {
+	reverse_proxy host.docker.internal:11434 {
+		header_up Host localhost:11434
+	}
+}
+# The iPhone widget's status (setup/widget-data.py) for tailscale serve's /widget.json. Only
+# that file: estado.json next to it stays private.
+http://:8092 {
+	root * /srv/feed
+	rewrite * /widget.json
+	header Cache-Control no-store
+	file_server
+}
+http://graficos.lan {
+	import ts 61208
+}
+http://pulso.lan {
+	import ts 3015
+}
+http://logs.lan {
+	import ts 8080
+}

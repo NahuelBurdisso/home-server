@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>En el iPhone</h1>
+<section class="card">
+  <h2>1 · Como app</h2>
+  <p>En Safari, esta página → <strong>Compartir</strong> → <strong>Agregar a pantalla de inicio</strong>.</p>
+</section>
+<section class="card">
+  <h2>2 · “Oye Siri, armá el pedido”</h2>
+  <p>App <strong>Atajos</strong> → <strong>+</strong> → nombre <em>Armá el pedido</em>, con estas acciones:</p>
+  <ol class="steps">
+    <li><strong>Obtener contenido de URL</strong>: <code>{{ PUBLIC_URL }}/api/armar</code>, método <strong>POST</strong>.</li>
+    <li><strong>Leer texto</strong>: el contenido de la URL.</li>
+  </ol>
+  <p class="note">Arma un borrador por proveedor con lo pendiente en la Lista. No manda nada: lo revisás y lo mandás desde acá.</p>
+</section>
+<section class="card">
+  <h2>3 · “¿Qué pedidos hay?” y “¿cuánto está la banana?”</h2>
+  <p><strong>Obtener contenido de URL</strong> <code>{{ PUBLIC_URL }}/api/pedidos</code> → <strong>Leer texto</strong>.</p>
+  <p>Precios: <code>{{ PUBLIC_URL }}/api/precio?q=banana</code>.</p>
+  <p>Guardados: <code>{{ PUBLIC_URL }}/api/guardados</code>. Para usar uno, <code>{{ PUBLIC_URL }}/api/usar</code>, método <strong>POST</strong>, con el nombre como texto (“lo de siempre”).</p>
+</section>
+<section class="card">
+  <h2>4 · Por WhatsApp y con el Asistente</h2>
+  <p>Al bot: “armá el pedido”, “pedí la verdura”, “pedí 2 kg de papas y bananas a la verdulería”, “¿cuánto está la banana?”, “pedidos”.</p>
+  <p>En Open WebUI, el <em>Asistente del server</em> ve los pedidos, los precios y los guardados, y puede armar un borrador.</p>
+  <p class="note">Un pedido que se repite: en su página, <strong>Guardar para repetir</strong>. Después, <strong>Usar</strong> lo suma al borrador de ese proveedor con los precios del día.</p>
+</section>
+{% endblock %}
